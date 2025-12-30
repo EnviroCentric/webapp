@@ -1,0 +1,22 @@
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install ngrok globally so expo tunnel works non-interactively
+RUN npm install -g @expo/ngrok@^4.1.0
+
+# Install dependencies based on lockfile for reproducible dev builds
+COPY package*.json ./
+RUN npm install
+
+# Copy the rest of the source
+COPY . .
+
+# Expo / Metro and devtools ports
+EXPOSE 8081 19000 19001
+
+# Default envs for running inside Docker (compose will override as needed)
+ENV EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0 \
+    EXPO_NO_TELEMETRY=1
+
+CMD ["npm", "start", "--", "--tunnel"]

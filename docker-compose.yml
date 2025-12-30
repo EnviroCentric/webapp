@@ -56,6 +56,27 @@ services:
       retries: 5
       start_period: 10s
 
+  # mobile:
+  #   build:
+  #     context: ./mobile
+  #     dockerfile: Dockerfile.dev
+  #   ports:
+  #     # Metro / devtools
+  #     # Changed host port from 8082 -> 8085 to avoid conflict on the host
+  #     - "8085:8081"
+  #     - "19000:19000"
+  #     - "19001:19001"
+  #   volumes:
+  #     - ./mobile:/app
+  #     - /app/node_modules
+  #   environment:
+  #     # Reuse the same backend URL the web app uses
+  #     - EXPO_PUBLIC_API_URL=${VITE_API_URL}
+  #     # Let Expo devtools bind on all interfaces
+  #     - EXPO_DEVTOOLS_LISTEN_ADDRESS=0.0.0.0
+  #   depends_on:
+  #     - backend
+
 volumes:
   enviro:
     external: true
