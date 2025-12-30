@@ -71,6 +71,7 @@ export default function ProjectsScreen() {
         <FlatList
           data={projects}
           keyExtractor={(item) => String(item.id)}
+          contentContainerStyle={styles.listContent}
           renderItem={({ item }) => (
             <Link href={`/projects/${item.id}`} asChild>
               <TouchableOpacity
@@ -101,6 +102,9 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+  },
+  listContent: {
+    paddingBottom: 100, // Account for floating dock
   },
   centered: {
     flex: 1,

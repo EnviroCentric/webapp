@@ -99,6 +99,7 @@ const styles = StyleSheet.create({
   contentWrapper: {
     flex: 1,
     gap: 16,
+    paddingBottom: 100, // Account for floating dock
   },
   title: {
     marginBottom: 4,

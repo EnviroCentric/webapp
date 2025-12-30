@@ -1,7 +1,7 @@
 import { Tabs, Redirect } from 'expo-router';
 import React from 'react';
 
-import { HapticTab } from '@/components/haptic-tab';
+import { FloatingDock } from '@/components/floating-dock';
 import { IconSymbol } from '@/components/ui/icon-symbol';
 import { Colors } from '@/constants/theme';
 import { useAuth } from '@/context/AuthContext';
@@ -22,10 +22,16 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      tabBar={(props) => <FloatingDock {...props} />}
       screenOptions={{
         tabBarActiveTintColor: Colors[effectiveTheme].tint,
         headerShown: false,
-        tabBarButton: HapticTab,
+        tabBarStyle: {
+          position: 'absolute',
+          backgroundColor: 'transparent',
+          borderTopWidth: 0,
+          elevation: 0,
+        },
       }}>
       <Tabs.Screen
         name="projects/index"
@@ -39,6 +45,18 @@ export default function TabLayout() {
         options={{
           title: 'Settings',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="gearshape" color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="projects/[projectId]/index"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="projects/[projectId]/addresses/[addressId]/samples"
+        options={{
+          href: null,
         }}
       />
     </Tabs>
