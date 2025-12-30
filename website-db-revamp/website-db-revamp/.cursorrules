@@ -1,0 +1,87 @@
+# Cursor Rules for API Development
+
+## Testing Requirements
+
+### New Endpoint Testing
+- Every new API endpoint MUST have corresponding tests
+- Tests must be created BEFORE the endpoint is merged
+- Tests must cover all required scenarios (see TESTING_RULES.md)
+
+### Test Structure
+- All tests must be async with `@pytest.mark.asyncio`
+- Tests must be self-contained
+- Each test must create its own test data
+- Tests must clean up after themselves
+
+### Required Test Categories
+For each endpoint, the following must be tested:
+
+#### Authentication
+- Unauthorized access (401)
+- Authorized access with valid token
+- Authorized access with invalid token
+
+#### Input Validation
+- Valid input data
+- Invalid input data (422)
+- Missing required fields
+- Invalid field types
+- Field length/format validation
+
+#### Business Logic
+- Success case
+- Edge cases
+- Error conditions
+- Data integrity checks
+
+### Endpoint-Specific Requirements
+
+#### GET Endpoints
+- Returns correct data structure
+- Returns correct status code
+- Handles non-existent resources (404)
+- Handles query parameters
+- Handles pagination (if applicable)
+
+#### POST/PUT Endpoints
+- Creates/updates resource successfully
+- Returns correct response format
+- Validates input data
+- Handles duplicate data (if applicable)
+- Updates related resources (if applicable)
+
+#### DELETE Endpoints
+- Deletes resource successfully
+- Returns correct status code
+- Handles non-existent resources
+- Handles related resource cleanup
+
+### Code Review Requirements
+Before merging any endpoint:
+1. All required test cases must be implemented
+2. Tests must pass in isolation and together
+3. No test data leaks between tests
+4. Error cases must be properly handled
+5. Edge cases must be covered
+6. Database operations must be verified
+7. Response formats must be validated
+8. Authentication must be properly tested
+9. Input validation must be comprehensive
+
+### Enforcement
+- Pull requests without tests will be rejected
+- Incomplete test coverage will block merging
+- Tests must pass all checks before merging
+- All test requirements must be met before code review
+
+### Documentation
+- All tests must be documented
+- Test documentation must explain the purpose of each test
+- Complex test scenarios must include comments
+- Test failures must be clearly documented
+
+### Continuous Integration
+- All tests must pass in CI environment
+- Test coverage must meet minimum requirements
+- No decrease in test coverage allowed
+- All new code must be covered by tests 

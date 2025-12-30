@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Switch } from 'react-native';
+import { Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator, Switch, SafeAreaView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/context/AuthContext';
 import { ThemedView } from '@/components/themed-view';
@@ -101,7 +101,8 @@ export default function LoginScreen() {
   };
 
   return (
-    <ThemedView style={[styles.container, { backgroundColor }] }>
+    <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={[styles.container, { backgroundColor }] }>
       <ThemedText type="title" style={styles.title}>
         Field Tech Login
       </ThemedText>
@@ -164,10 +165,14 @@ export default function LoginScreen() {
         </TouchableOpacity>
       )}
     </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     justifyContent: 'center',

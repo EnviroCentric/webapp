@@ -1,0 +1,24 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>Network Test</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <h1>Connection Test</h1>
+    <p>If you can see this page, the network connection is working!</p>
+    <button onclick="testBackend()">Test Backend API</button>
+    <div id="result"></div>
+    <script>
+        async function testBackend() {
+            try {
+                const response = await fetch('http://192.168.1.237:8000/', { mode: 'cors' });
+                const data = await response.json();
+                document.getElementById('result').innerHTML = '✅ Backend accessible: ' + JSON.stringify(data);
+            } catch (error) {
+                document.getElementById('result').innerHTML = '❌ Backend error: ' + error.message;
+            }
+        }
+    </script>
+</body>
+</html>

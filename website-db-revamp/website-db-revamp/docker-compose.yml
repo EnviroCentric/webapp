@@ -1,0 +1,74 @@
+services:
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - ./frontend/certs:/app/certs:ro
+    environment:
+      - VITE_API_URL=${VITE_API_URL}
+      - VITE_FRONTEND_URL=${VITE_FRONTEND_URL}
+      - VITE_MOBILE_URL=${VITE_MOBILE_URL}
+      - VITE_PROTOCOL=${VITE_PROTOCOL}
+      - VITE_HOST=${VITE_HOST}
+      - VITE_MOBILE_HOST=${VITE_MOBILE_HOST}
+      - VITE_PORT=${VITE_PORT}
+      - VITE_GOOGLE_PLACES_API_KEY=${GOOGLE_MAPS_API_KEY}
+    depends_on:
+      - backend
+    # Enable access from mobile devices on local network
+    networks:
+      - default
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./backend/certs:/app/certs:ro
+    environment:
+      - PYTHONPATH=/app
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+      - DATABASE_URL=${DATABASE_URL}
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
+      - JWT_REFRESH_SECRET_KEY=${JWT_REFRESH_SECRET_KEY}
+      - JWT_ALGORITHM=${JWT_ALGORITHM}
+      - ACCESS_TOKEN_EXPIRE_MINUTES=${ACCESS_TOKEN_EXPIRE_MINUTES}
+      - REFRESH_TOKEN_EXPIRE_MINUTES=${REFRESH_TOKEN_EXPIRE_MINUTES}
+      - ADMIN_CREATION_SECRET=${ADMIN_CREATION_SECRET}
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
+      - BACKEND_PORT=${BACKEND_PORT}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:15-alpine
+    ports:
+      - "15432:5432"
+    environment:
+      - POSTGRES_USER=${POSTGRES_USER}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - enviro:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+volumes:
+  enviro:
+    external: true

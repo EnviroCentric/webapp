@@ -1,0 +1,87 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Database and Testing Structure
+
+## Database Architecture
+- The project uses raw SQL with asyncpg for database operations
+- SQL queries are stored in [backend/app/db/queries](mdc:backend/app/db/queries)
+- Migrations are managed in [backend/app/db/migrations](mdc:backend/app/db/migrations)
+- No ORM is used - all database operations use direct SQL queries
+
+## Testing Requirements
+
+### Test Structure
+- All tests must be async with `@pytest.mark.asyncio`
+- Tests use asyncpg's Pool for database connections
+- Tests are organized in two main directories:
+  - [backend/tests/services](mdc:backend/tests/services) for service layer tests
+  - [backend/tests/api/v1](mdc:backend/tests/api/v1) for API endpoint tests
+
+### Required Test Categories
+For each endpoint, the following must be tested:
+
+#### Authentication
+- Unauthorized access (401)
+- Authorized access with valid token
+- Authorized access with invalid token
+
+#### Input Validation
+- Valid input data
+- Invalid input data (422)
+- Missing required fields
+- Invalid field types
+- Field length/format validation
+
+#### Business Logic
+- Success case
+- Edge cases
+- Error conditions
+- Data integrity checks
+
+### Test Data Management
+- Each test must create its own test data
+- Tests must clean up after themselves
+- No test data leaks between tests
+- Use fixtures from [backend/tests/conftest.py](mdc:backend/tests/conftest.py)
+
+### Database Testing
+- Use the test database pool from fixtures
+- Each test should be isolated
+- Verify both successful operations and error cases
+- Check database constraints and relationships
+
+### API Testing
+- Use FastAPI's TestClient for API tests
+- Test all HTTP methods (GET, POST, PATCH, DELETE)
+- Verify response status codes and content
+- Test authentication headers and tokens
+
+## Example Test Structure
+```python
+@pytest.mark.asyncio
+async def test_feature_success(db: Pool, user_token):
+    # Arrange
+    # Create test data
+    
+    # Act
+    # Perform the operation
+    
+    # Assert
+    # Verify results
+```
+
+## Common Test Patterns
+1. Create test data
+2. Perform operation
+3. Verify result
+4. Clean up test data
+
+## Error Handling Tests
+- Test database constraints
+- Test business rule violations
+- Test permission checks
+- Test invalid input handling
+

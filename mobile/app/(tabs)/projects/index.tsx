@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet, SafeAreaView } from 'react-native';
 import { Link } from 'expo-router';
 import { ThemedView } from '@/components/themed-view';
 import { ThemedText } from '@/components/themed-text';
@@ -37,54 +37,67 @@ export default function ProjectsScreen() {
 
   if (loading) {
     return (
-      <ThemedView style={styles.centered}>
-        <ActivityIndicator />
-      </ThemedView>
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.centered}>
+          <ActivityIndicator />
+        </ThemedView>
+      </SafeAreaView>
     );
   }
 
   if (error) {
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText style={styles.error}>{error}</ThemedText>
-      </ThemedView>
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.centered}>
+          <ThemedText style={styles.error}>{error}</ThemedText>
+        </ThemedView>
+      </SafeAreaView>
     );
   }
 
   if (!projects.length) {
     return (
-      <ThemedView style={styles.centered}>
-        <ThemedText>No projects assigned yet.</ThemedText>
-      </ThemedView>
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.centered}>
+          <ThemedText>No projects assigned yet.</ThemedText>
+        </ThemedView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <ThemedView style={styles.container}>
-      <FlatList
-        data={projects}
-        keyExtractor={(item) => String(item.id)}
-        renderItem={({ item }) => (
-          <Link href={`/projects/${item.id}`} asChild>
-            <TouchableOpacity
-              style={[
-                styles.card,
-                { backgroundColor: cardBackground, borderColor },
-              ]}
-            >
-              <ThemedText style={[styles.name, { color: textColor }]}>{item.name}</ThemedText>
-              <Text style={[styles.sub, { color: subTextColor }]}>
-                Created: {new Date(item.created_at).toLocaleDateString()}
-              </Text>
-            </TouchableOpacity>
-          </Link>
-        )}
-      />
-    </ThemedView>
+    <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={styles.container}>
+        <FlatList
+          data={projects}
+          keyExtractor={(item) => String(item.id)}
+          renderItem={({ item }) => (
+            <Link href={`/projects/${item.id}`} asChild>
+              <TouchableOpacity
+                style={[
+                  styles.card,
+                  { backgroundColor: cardBackground, borderColor },
+                ]}
+              >
+                <ThemedText style={[styles.name, { color: textColor }]}>
+                  {item.name}
+                </ThemedText>
+                <Text style={[styles.sub, { color: subTextColor }]}>
+                  Created: {new Date(item.created_at).toLocaleDateString()}
+                </Text>
+              </TouchableOpacity>
+            </Link>
+          )}
+        />
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: 16,

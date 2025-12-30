@@ -1,0 +1,26 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# API Testing Rules
+
+All API endpoints MUST be covered by comprehensive tests before merging. The following requirements apply:
+
+- All tests must be async and use `@pytest.mark.asyncio`.
+- Each endpoint must have tests for:
+  - Authentication (401, valid/invalid tokens)
+  - Input validation (valid/invalid/missing data, type/format/length)
+  - Business logic (success, edge, error, data integrity)
+- GET endpoints must test data structure, status codes, 404s, query params, pagination, and response format.
+- POST/PUT endpoints must test creation/update, response format, validation, duplicates, related resources, partial/full updates, and defaults.
+- DELETE endpoints must test deletion, status codes, non-existent resources, and related cleanup.
+- All tests must be self-contained, create their own data, and clean up after themselves.
+- Tests must be documented and organized by feature/endpoint.
+- No test data leaks between tests.
+- All code paths, error conditions, and edge cases must be tested.
+- Tests must pass in CI and meet minimum coverage (80%).
+- Pull requests without complete, passing tests will be rejected.
+
+For full details and examples, see [TESTING_RULES.md](mdc:backend/TESTING_RULES.md)
+

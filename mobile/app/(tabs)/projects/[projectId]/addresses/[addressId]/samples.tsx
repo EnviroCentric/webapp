@@ -1,7 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity, TextInput, Button } from 'react-native';
+import { View, StyleSheet, ActivityIndicator, FlatList, TouchableOpacity, TextInput, Button, SafeAreaView } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 import { request } from '@/lib/api';
+import { ThemedView } from '@/components/themed-view';
+import { ThemedText } from '@/components/themed-text';
+import { useThemeColor } from '@/hooks/use-theme-color';
 
 interface Address {
   id: number;
@@ -28,6 +31,13 @@ export default function SampleCollectionScreen() {
   const [newDesc, setNewDesc] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
+
+  const backgroundColor = useThemeColor({}, 'background');
+  const cardBackground = useThemeColor({}, 'card');
+  const borderColor = useThemeColor({}, 'border');
+  const textColor = useThemeColor({}, 'text');
+  const subTextColor = useThemeColor({}, 'icon');
+  const tintColor = useThemeColor({}, 'tint');
 
   useEffect(() => {
     if (!projectId || !addressId) return;
@@ -144,34 +154,41 @@ export default function SampleCollectionScreen() {
 
   if (loading) {
     return (
-      <View style={styles.centered}>
-        <ActivityIndicator />
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.centered}>
+          <ActivityIndicator />
+        </ThemedView>
+      </SafeAreaView>
     );
   }
 
   if (error || !address) {
     return (
-      <View style={styles.centered}>
-        <Text style={styles.error}>{error ?? 'Address not found'}</Text>
-      </View>
+      <SafeAreaView style={styles.safeArea}>
+        <ThemedView style={styles.centered}>
+          <ThemedText style={styles.error}>{error ?? 'Address not found'}</ThemedText>
+        </ThemedView>
+      </SafeAreaView>
     );
   }
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={[styles.container, { backgroundColor }]}>
       <View style={styles.header}>
-        <Text style={styles.title}>{address.name}</Text>
-        <Text style={styles.sub}>{new Date(address.date).toLocaleDateString()}</Text>
+        <ThemedText style={[styles.title, { color: textColor }]}>{address.name}</ThemedText>
+        <ThemedText style={[styles.sub, { color: subTextColor }]}>
+          {new Date(address.date).toLocaleDateString()}
+        </ThemedText>
       </View>
 
       <View style={styles.section}>
         <View style={styles.sectionHeader}>
-          <Text style={styles.sectionTitle}>Samples for Today</Text>
+          <ThemedText style={[styles.sectionTitle, { color: textColor }]}>Samples for Today</ThemedText>
           <Button title="Refresh" onPress={fetchSamples} />
         </View>
         {samples.length === 0 ? (
-          <Text>No samples for today.</Text>
+          <ThemedText>No samples for today.</ThemedText>
         ) : (
           <FlatList
             data={samples}
@@ -179,34 +196,34 @@ export default function SampleCollectionScreen() {
             renderItem={({ item }) => {
               const secs = totalSeconds(item);
               return (
-                <View style={styles.sampleCard}>
-                  <Text style={styles.sampleDesc}>{item.description}</Text>
-                  <Text style={styles.sub}>Start: {formatTime(item.start_time)}</Text>
-                  <Text style={styles.sub}>End: {formatTime(item.stop_time)}</Text>
-                  <Text style={styles.sub}>Total: {formatDuration(secs)}</Text>
+                <ThemedView style={[styles.sampleCard, { backgroundColor: cardBackground, borderColor }]}>
+                  <ThemedText style={[styles.sampleDesc, { color: textColor }]}>{item.description}</ThemedText>
+                  <ThemedText style={[styles.sub, { color: subTextColor }]}>Start: {formatTime(item.start_time)}</ThemedText>
+                  <ThemedText style={[styles.sub, { color: subTextColor }]}>End: {formatTime(item.stop_time)}</ThemedText>
+                  <ThemedText style={[styles.sub, { color: subTextColor }]}>Total: {formatDuration(secs)}</ThemedText>
                   <View style={styles.buttonRow}>
                     {!item.start_time && (
-                      <TouchableOpacity onPress={() => handleStart(item)} style={styles.btn}>
-                        <Text style={styles.btnText}>Start</Text>
+                      <TouchableOpacity onPress={() => handleStart(item)} style={[styles.btn, { backgroundColor: tintColor }]}>
+                        <ThemedText style={styles.btnText}>Start</ThemedText>
                       </TouchableOpacity>
                     )}
                     {item.start_time && !item.stop_time && (
-                      <TouchableOpacity onPress={() => handleStop(item)} style={styles.btnWarn}>
-                        <Text style={styles.btnText}>Stop</Text>
+                      <TouchableOpacity onPress={() => handleStop(item)} style={[styles.btnWarn, { backgroundColor: '#f59e0b' }]}>
+                        <ThemedText style={styles.btnText}>Stop</ThemedText>
                       </TouchableOpacity>
                     )}
                     {item.start_time && item.stop_time && (
-                      <TouchableOpacity onPress={() => handleResume(item)} style={styles.btn}>
-                        <Text style={styles.btnText}>Resume</Text>
+                      <TouchableOpacity onPress={() => handleResume(item)} style={[styles.btn, { backgroundColor: tintColor }]}>
+                        <ThemedText style={styles.btnText}>Resume</ThemedText>
                       </TouchableOpacity>
                     )}
                     {(item.start_time || item.stop_time) && (
-                      <TouchableOpacity onPress={() => handleReset(item)} style={styles.btnDanger}>
-                        <Text style={styles.btnText}>Reset</Text>
+                      <TouchableOpacity onPress={() => handleReset(item)} style={[styles.btnDanger, { backgroundColor: '#dc2626' }]}>
+                        <ThemedText style={styles.btnText}>Reset</ThemedText>
                       </TouchableOpacity>
                     )}
                   </View>
-                </View>
+                </ThemedView>
               );
             }}
           />
@@ -214,13 +231,17 @@ export default function SampleCollectionScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Add Sample</Text>
-        {addError && <Text style={styles.error}>{addError}</Text>}
+        <ThemedText style={[styles.sectionTitle, { color: textColor }]}>Add Sample</ThemedText>
+        {addError && <ThemedText style={styles.error}>{addError}</ThemedText>}
         {adding ? (
           <>
             <TextInput
-              style={styles.input}
+              style={[
+                styles.input,
+                { borderColor, color: textColor, backgroundColor: cardBackground },
+              ]}
               placeholder="Sample description"
+              placeholderTextColor={subTextColor}
               value={newDesc}
               onChangeText={setNewDesc}
             />
@@ -228,6 +249,7 @@ export default function SampleCollectionScreen() {
               title={saving ? 'Saving...' : 'Save Sample'}
               onPress={handleAddSample}
               disabled={saving || !newDesc.trim()}
+              color={tintColor}
             />
             <View style={{ height: 8 }} />
             <Button
@@ -240,18 +262,21 @@ export default function SampleCollectionScreen() {
             />
           </>
         ) : (
-          <Button title="Add Sample" onPress={() => setAdding(true)} />
+          <Button title="Add Sample" onPress={() => setAdding(true)} color={tintColor} />
         )}
       </View>
-    </View>
+    </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: 16,
-    backgroundColor: '#fff',
   },
   centered: {
     flex: 1,
@@ -265,9 +290,7 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '700',
   },
-  sub: {
-    color: '#555',
-  },
+  sub: {},
   section: {
     marginTop: 16,
   },
@@ -285,9 +308,7 @@ const styles = StyleSheet.create({
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#ddd',
     marginBottom: 10,
-    backgroundColor: '#f9fafb',
   },
   sampleDesc: {
     fontSize: 16,
@@ -304,19 +325,16 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: '#2563eb',
   },
   btnWarn: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: '#f59e0b',
   },
   btnDanger: {
     paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 4,
-    backgroundColor: '#dc2626',
   },
   btnText: {
     color: '#fff',
@@ -324,13 +342,10 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: '#ccc',
     borderRadius: 4,
     paddingHorizontal: 12,
     paddingVertical: 8,
     marginBottom: 8,
   },
-  error: {
-    color: 'red',
-  },
+  error: {},
 });

@@ -1,0 +1,44 @@
+@import "tailwindcss";
+
+/* ✅ Enable dark mode via the .dark class */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Performance optimizations for smooth animations */
+.will-change-transform {
+  will-change: transform, opacity;
+}
+
+/* Smoother scrolling for better animation performance */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Optimize animations for better performance */
+@media (prefers-reduced-motion: no-preference) {
+  * {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Respect user's motion preferences */
+@media (prefers-reduced-motion: reduce) {
+  .will-change-transform {
+    will-change: auto;
+    transform: none !important;
+    transition: none !important;
+  }
+  
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Better performance for transform animations */
+.transform-gpu {
+  transform: translate3d(0, 0, 0);
+  backface-visibility: hidden;
+  perspective: 1000px;
+}

@@ -1,15 +1,19 @@
 import { Href, Link } from 'expo-router';
 import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
-import { type ComponentProps } from 'react';
+import { type ComponentProps, type ReactNode } from 'react';
 
-type Props = Omit<ComponentProps<typeof Link>, 'href'> & { href: Href & string };
+type Props = Omit<ComponentProps<typeof Link>, 'href' | 'asChild' | 'children'> & {
+  href: Href & string;
+  children: ReactNode;
+};
 
-export function ExternalLink({ href, ...rest }: Props) {
+export function ExternalLink({ href, children, ...rest }: Props) {
   return (
     <Link
       target="_blank"
-      {...rest}
       href={href}
+      asChild
+      {...rest}
       onPress={async (event) => {
         if (process.env.EXPO_OS !== 'web') {
           // Prevent the default behavior of linking to the default browser on native.
@@ -19,7 +23,8 @@ export function ExternalLink({ href, ...rest }: Props) {
             presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
           });
         }
-      }}
-    />
+      }}>
+      {children}
+    </Link>
   );
 }

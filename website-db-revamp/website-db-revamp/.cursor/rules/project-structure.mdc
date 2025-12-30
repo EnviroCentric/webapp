@@ -1,0 +1,76 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Structure and API Endpoints
+
+## Project Organization
+- Backend is organized in a modular structure
+- Main components are in [backend/app](mdc:backend/app)
+- Tests are in [backend/tests](mdc:backend/tests)
+
+## Core Components
+
+### API Layer
+- API routes are in [backend/app/api/v1](mdc:backend/app/api/v1)
+- Main router configuration in [backend/app/api/v1/api.py](mdc:backend/app/api/v1/api.py)
+- Each feature has its own router file
+
+### Service Layer
+- Business logic in [backend/app/services](mdc:backend/app/services)
+- Each service module handles a specific domain
+- Services use raw SQL queries for database operations
+
+### Database Layer
+- SQL queries in [backend/app/db/queries](mdc:backend/app/db/queries)
+- Migrations in [backend/app/db/migrations](mdc:backend/app/db/migrations)
+- Database initialization in [backend/app/db/init.sql](mdc:backend/app/db/init.sql)
+
+### Schemas
+- Pydantic models in [backend/app/schemas](mdc:backend/app/schemas)
+- Separate schemas for request/response models
+- Validation rules defined in schema classes
+
+## API Endpoints
+
+### Authentication
+- POST `/api/v1/auth/login` - User login
+- POST `/api/v1/auth/refresh` - Refresh access token
+
+### Users
+- GET `/api/v1/users/me` - Get current user
+- GET `/api/v1/users/{user_id}` - Get user by ID
+- PATCH `/api/v1/users/{user_id}` - Update user
+
+### Projects
+- POST `/api/v1/projects` - Create project
+- GET `/api/v1/projects/{project_id}` - Get project
+- PATCH `/api/v1/projects/{project_id}` - Update project
+- POST `/api/v1/projects/{project_id}/addresses` - Add address
+- PATCH `/api/v1/projects/{project_id}/addresses/{address_id}` - Update address
+- POST `/api/v1/projects/{project_id}/technicians` - Assign technician
+- DELETE `/api/v1/projects/{project_id}/technicians` - Remove technician
+
+### Roles
+- GET `/api/v1/roles` - List roles
+- GET `/api/v1/roles/{role_id}` - Get role
+- POST `/api/v1/roles` - Create role
+- PATCH `/api/v1/roles/{role_id}` - Update role
+
+## Role-Based Access Control
+- Technician role (level 50) can:
+  - View assigned projects
+- Manager role (level 80) can:
+  - Assign technicians to projects
+  - Remove technicians from projects
+  - All technician permissions
+- Admin role (level 100) has full access
+
+## Database Schema
+- Users table with role assignments
+- Projects table with address references
+- Addresses table with date constraints
+- Project-technician junction table
+- Role and permission tables
+

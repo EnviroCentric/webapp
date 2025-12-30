@@ -1,5 +1,5 @@
 import React from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, SafeAreaView } from 'react-native';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
@@ -30,8 +30,9 @@ export default function SettingsScreen() {
   const borderColor = useThemeColor({}, 'border');
 
   return (
-    <ThemedView style={styles.container}>
-      <View style={styles.contentWrapper}>
+    <SafeAreaView style={styles.safeArea}>
+      <ThemedView style={styles.container}>
+        <View style={styles.contentWrapper}>
         <ThemedText type="title" style={styles.title}>
           Settings
         </ThemedText>
@@ -81,11 +82,15 @@ export default function SettingsScreen() {
           Current theme: {effectiveTheme === 'dark' ? 'Dark' : 'Light'}
         </ThemedText>
       </View>
-    </ThemedView>
+      </ThemedView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     paddingHorizontal: 16,
