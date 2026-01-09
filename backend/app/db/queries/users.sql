@@ -1,120 +1,233 @@
--- Create view for user roles with permissions
-CREATE OR REPLACE VIEW user_roles_with_permissions AS
-SELECT 
-    ur.user_id,
-    r.id,
-    r.name,
-    r.description,
-    r.level,
-    r.created_at,
-    COALESCE(array_agg(p.name ORDER BY p.name) FILTER (WHERE p.name IS NOT NULL), '{}') AS permissions
-FROM user_roles ur
-JOIN roles r ON ur.role_id = r.id
-LEFT JOIN role_permissions rp ON r.id = rp.role_id
-LEFT JOIN permissions p ON rp.permission_id = p.id
-GROUP BY ur.user_id, r.id, r.name, r.description, r.level, r.created_at;
-
 -- name: get_user_by_email
-SELECT id, email, hashed_password, first_name, last_name, is_active, is_superuser
+SELECT
+  id,
+  company_id,
+  email,
+  hashed_password,
+  first_name,
+  last_name,
+  phone,
+  is_active,
+  is_superuser,
+  highest_level,
+  created_at,
+  updated_at
 FROM users
-WHERE email = $1;
+WHERE LOWER(email) = LOWER($1);
 
 -- name: get_user_highest_role_level
-SELECT COALESCE(MAX(r.level), 0) as highest_level
-FROM roles r 
-JOIN user_roles ur ON r.id = ur.role_id 
+SELECT COALESCE(MAX(r.level), 0) AS highest_level
+FROM roles r
+JOIN user_roles ur ON r.id = ur.role_id
 WHERE ur.user_id = $1;
 
 -- name: get_all_users
-SELECT 
-    u.id,
-    u.email,
-    u.hashed_password,
-    u.first_name,
-    u.last_name,
-    u.is_active,
-    u.is_superuser,
-    u.created_at,
-    u.updated_at,
-    COALESCE(
-        json_agg(
-            json_build_object(
-                'id', urwp.id,
-                'name', urwp.name,
-                'description', urwp.description,
-                'level', urwp.level,
-                'created_at', urwp.created_at,
-                'permissions', urwp.permissions
-            )
-        ) FILTER (WHERE urwp.id IS NOT NULL),
-        '[]'::json
-    )::jsonb as roles
+SELECT
+  u.id,
+  u.company_id,
+  c.name as company_name,
+  u.email,
+  u.first_name,
+  u.last_name,
+  u.phone,
+  u.is_active,
+  u.is_superuser,
+  u.highest_level,
+  u.created_at,
+  u.updated_at,
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'id', r.id,
+        'name', r.name,
+        'description', r.description,
+        'level', r.level,
+        'created_at', r.created_at
+      )
+    ) FILTER (WHERE r.id IS NOT NULL),
+    '[]'::json
+  )::jsonb AS roles
 FROM users u
-LEFT JOIN user_roles_with_permissions urwp ON u.id = urwp.user_id
-GROUP BY u.id, u.email, u.hashed_password, u.first_name, u.last_name, u.is_active, u.is_superuser, u.created_at, u.updated_at
+LEFT JOIN companies c ON u.company_id = c.id
+LEFT JOIN user_roles ur ON ur.user_id = u.id
+LEFT JOIN roles r ON r.id = ur.role_id
+GROUP BY u.id, c.name
 ORDER BY u.created_at DESC;
 
 -- name: get_user_by_id
-SELECT 
-    u.id,
-    u.email,
-    u.hashed_password,
-    u.first_name,
-    u.last_name,
-    u.is_active,
-    u.is_superuser,
-    u.created_at,
-    u.updated_at,
-    COALESCE(
-        json_agg(
-            json_build_object(
-                'id', urwp.id,
-                'name', urwp.name,
-                'description', urwp.description,
-                'level', urwp.level,
-                'created_at', urwp.created_at,
-                'permissions', urwp.permissions
-            )
-        ) FILTER (WHERE urwp.id IS NOT NULL),
-        '[]'::json
-    )::jsonb as roles
+SELECT
+  u.id,
+  u.company_id,
+  c.name as company_name,
+  u.email,
+  u.first_name,
+  u.last_name,
+  u.phone,
+  u.is_active,
+  u.is_superuser,
+  u.highest_level,
+  u.created_at,
+  u.updated_at,
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'id', r.id,
+        'name', r.name,
+        'description', r.description,
+        'level', r.level,
+        'created_at', r.created_at
+      )
+    ) FILTER (WHERE r.id IS NOT NULL),
+    '[]'::json
+  )::jsonb AS roles
 FROM users u
-LEFT JOIN user_roles_with_permissions urwp ON u.id = urwp.user_id
+LEFT JOIN companies c ON u.company_id = c.id
+LEFT JOIN user_roles ur ON ur.user_id = u.id
+LEFT JOIN roles r ON r.id = ur.role_id
 WHERE u.id = $1
-GROUP BY u.id, u.email, u.hashed_password, u.first_name, u.last_name, u.is_active, u.is_superuser, u.created_at, u.updated_at;
+GROUP BY u.id, c.name;
 
 -- name: create_user
 INSERT INTO users (
-    email,
-    hashed_password,
-    first_name,
-    last_name,
-    is_active,
-    is_superuser
-) VALUES (
-    $1, $2, $3, $4, $5, $6
-) RETURNING id;
+  company_id,
+  email,
+  hashed_password,
+  first_name,
+  last_name,
+  phone,
+  is_active,
+  is_superuser
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+RETURNING id;
 
 -- name: update_user
 UPDATE users
-SET 
-    email = COALESCE($2, email),
-    hashed_password = COALESCE($3, hashed_password),
-    first_name = COALESCE($4, first_name),
-    last_name = COALESCE($5, last_name),
-    is_active = COALESCE($6, is_active),
-    is_superuser = COALESCE($7, is_superuser),
-    updated_at = CURRENT_TIMESTAMP
+SET
+  company_id = COALESCE($2, company_id),
+  email = COALESCE($3, email),
+  hashed_password = COALESCE($4, hashed_password),
+  first_name = COALESCE($5, first_name),
+  last_name = COALESCE($6, last_name),
+  phone = COALESCE($7, phone),
+  is_active = COALESCE($8, is_active),
+  is_superuser = COALESCE($9, is_superuser),
+  updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
-RETURNING *;
+RETURNING
+  id, company_id, email, first_name, last_name, phone, is_active, is_superuser, created_at, updated_at, highest_level;
 
 -- name: delete_user
 DELETE FROM users
 WHERE id = $1
-RETURNING *;
+RETURNING id;
 
 -- name: delete_user_roles
 DELETE FROM user_roles WHERE user_id = $1;
 
 -- name: insert_user_role
-INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2) ON CONFLICT DO NOTHING; 
+INSERT INTO user_roles (user_id, role_id)
+VALUES ($1, $2)
+ON CONFLICT DO NOTHING;
+
+-- name: recalc_user_highest_role_level
+WITH maxlvl AS (
+  SELECT COALESCE(MAX(r.level), 0) AS lvl
+  FROM user_roles ur
+  JOIN roles r ON r.id = ur.role_id
+  WHERE ur.user_id = $1
+)
+UPDATE users
+SET highest_level = (SELECT lvl FROM maxlvl)
+WHERE id = $1;
+
+-- name: get_user_by_id_with_password
+SELECT
+  id,
+  company_id,
+  email,
+  hashed_password,
+  first_name,
+  last_name,
+  phone,
+  is_active,
+  is_superuser,
+  highest_level,
+  created_at,
+  updated_at
+FROM users
+WHERE id = $1;
+
+-- name: update_user_password
+UPDATE users
+SET
+  hashed_password = $2,
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = $1;
+
+-- name: get_users_by_min_role_level
+SELECT
+  u.id,
+  u.company_id,
+  c.name as company_name,
+  u.email,
+  u.first_name,
+  u.last_name,
+  u.phone,
+  u.is_active,
+  u.is_superuser,
+  u.highest_level,
+  u.created_at,
+  u.updated_at,
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'id', r.id,
+        'name', r.name,
+        'description', r.description,
+        'level', r.level,
+        'created_at', r.created_at
+      )
+    ) FILTER (WHERE r.id IS NOT NULL),
+    '[]'::json
+  )::jsonb AS roles
+FROM users u
+LEFT JOIN companies c ON u.company_id = c.id
+LEFT JOIN user_roles ur ON ur.user_id = u.id
+LEFT JOIN roles r ON r.id = ur.role_id
+WHERE u.is_active = true
+  AND u.highest_level >= $1
+GROUP BY u.id, c.name
+ORDER BY u.first_name, u.last_name;
+
+-- name: get_employees_minimal
+SELECT
+  u.id,
+  u.first_name,
+  u.last_name,
+  COALESCE(
+    json_agg(
+      json_build_object(
+        'id', r.id,
+        'name', r.name,
+        'description', r.description,
+        'level', r.level,
+        'created_at', r.created_at
+      )
+    ) FILTER (WHERE r.id IS NOT NULL),
+    '[]'::json
+  )::jsonb AS roles
+FROM users u
+LEFT JOIN user_roles ur ON ur.user_id = u.id
+LEFT JOIN roles r ON r.id = ur.role_id
+WHERE u.is_active = true
+  AND (
+    u.is_superuser = true 
+    OR EXISTS (
+      SELECT 1 FROM user_roles ur2 
+      JOIN roles r2 ON ur2.role_id = r2.id 
+      WHERE ur2.user_id = u.id 
+      AND r2.level >= $1
+    )
+  )
+GROUP BY u.id
+ORDER BY u.first_name, u.last_name;

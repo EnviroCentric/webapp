@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
+import ServiceInfo from './pages/ServiceInfo';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ProfileEdit from './pages/ProfileEdit';
@@ -30,6 +31,7 @@ function App() {
               <main className="pt-16 pb-6 min-h-[calc(100vh-4rem)] bg-white dark:bg-gray-900">
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/services" element={<ServiceInfo />} />
                   <Route
                     path="/dashboard"
                     element={

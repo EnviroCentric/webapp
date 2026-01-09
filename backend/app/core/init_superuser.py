@@ -12,11 +12,14 @@ async def main():
     password = getpass("Password: ")
     first_name = input("First name: ")
     last_name = input("Last name: ")
+    phone = input("Phone (optional): ").strip() or None
     user_data = UserCreate(
         email=email,
         password=password,
         first_name=first_name,
         last_name=last_name,
+        phone=phone,
+        company_id=None,     # Superusers don't belong to companies
         is_active=True,      # ignored, always True for superuser
         is_superuser=True    # ignored, always True for superuser
     )

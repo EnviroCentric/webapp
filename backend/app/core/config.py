@@ -1,63 +1,93 @@
+"""
+Configuration module for the EnviroCentric backend.
+
+This module defines a single `Settings` class that derives from Pydantic's
+`BaseSettings`.  All configuration for the backend is controlled via
+environment variables loaded from a `.env` file.  Defining settings in one
+place avoids duplication and makes it easy to see which variables are
+required.  See `.env.example` for a sample configuration.
+"""
+
 from typing import List
-from pydantic_settings import BaseSettings
-from pydantic import AnyHttpUrl, field_validator, ConfigDict
-import os
-import json
+# Pydantic v2 moved `BaseSettings` to the `pydantic_settings` package.  See
+# https://docs.pydantic.dev/latest/migration/#basesettings-has-moved-to-pydantic-settings
+try:
+    from pydantic_settings import BaseSettings  # type: ignore
+except ImportError:  # Fallback to pydantic v1 for compatibility
+    from pydantic import BaseSettings  # type: ignore
+
+from pydantic import Field
+
 
 class Settings(BaseSettings):
-    PROJECT_NAME: str = os.getenv("PROJECT_NAME", "Enviro-Centric")
-    VERSION: str = os.getenv("VERSION", "1.0.0")
-    DESCRIPTION: str = os.getenv("DESCRIPTION", "Enviro-Centric API")
+    """Application settings loaded from the environment.
 
-    # API Configuration
-    API_V1_STR: str = os.getenv("API_V1_STR", "/api/v1")
-    BACKEND_PORT: int = int(os.getenv("BACKEND_PORT", "8000"))
+    Attributes
+    ----------
+    API_V1_STR: str
+        The API prefix used for all version 1 endpoints.
+    JWT_SECRET_KEY: str
+        Secret key used to sign access tokens.
+    JWT_REFRESH_SECRET_KEY: str
+        Secret key used to sign refresh tokens.
+    JWT_ALGORITHM: str
+        Algorithm used to encode JWT tokens. Defaults to ``HS256``.
+    ACCESS_TOKEN_EXPIRE_MINUTES: int
+        Number of minutes before an access token expires. Defaults to 30.
+    REFRESH_TOKEN_EXPIRE_MINUTES: int
+        Number of minutes before a refresh token expires. Defaults to 30
+        days (43 200 minutes).
+    ADMIN_CREATION_SECRET: str
+        Secret used when bootstrapping an administrator account.
+    POSTGRES_USER: str
+        Username for the PostgreSQL database.
+    POSTGRES_PASSWORD: str
+        Password for the PostgreSQL database.
+    POSTGRES_DB: str
+        Database name.
+    DATABASE_URL: str
+        DSN string used by `asyncpg` to connect to the database.
+    ALLOWED_ORIGINS: List[str]
+        List of origins permitted for Cross‑Origin Resource Sharing.  The
+        default allows any origin and should be restricted in production.
+    BACKEND_PORT: int
+        Port the FastAPI application will bind to.
+    """
 
-    # JWT Configuration
-    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY")
-    JWT_REFRESH_SECRET_KEY: str = os.getenv("JWT_REFRESH_SECRET_KEY")
-    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-
-    # API Configuration
     API_V1_STR: str = "/api/v1"
-    BACKEND_PORT: int = int(os.getenv("BACKEND_PORT", "8000"))
+    PROJECT_NAME: str = "EnviroCentric"
+    JWT_SECRET_KEY: str = Field(..., description="Secret key for signing access tokens")
+    JWT_REFRESH_SECRET_KEY: str = Field(..., description="Secret key for signing refresh tokens")
+    JWT_ALGORITHM: str = Field("HS256", description="JWT signing algorithm")
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = Field(30, description="Minutes until access token expires")
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = Field(43200, description="Minutes until refresh token expires (30 days)")
+    ADMIN_CREATION_SECRET: str = Field(..., description="Secret for admin account creation")
+    POSTGRES_USER: str
+    POSTGRES_PASSWORD: str
+    POSTGRES_DB: str
+    DATABASE_URL: str
+    ALLOWED_ORIGINS: List[str] = Field(["*"], description="CORS allowed origins")
+    BACKEND_PORT: int = Field(8000, description="Port to bind the backend server")
+    GOOGLE_MAPS_API_KEY: str = Field(..., description="Google Places API key for address autocomplete and validation")
 
-    # JWT Configuration
-    JWT_SECRET_KEY: str = os.getenv("JWT_SECRET_KEY")
-    JWT_REFRESH_SECRET_KEY: str = os.getenv("JWT_REFRESH_SECRET_KEY")
-    JWT_ALGORITHM: str = os.getenv("JWT_ALGORITHM", "HS256")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "1440"))  # 24 hours
-    REFRESH_TOKEN_EXPIRE_MINUTES: int = int(os.getenv("REFRESH_TOKEN_EXPIRE_MINUTES", "43200"))  # 30 days
-
-    # Database Configuration
-    POSTGRES_USER: str = os.getenv("POSTGRES_USER")
-    POSTGRES_PASSWORD: str = os.getenv("POSTGRES_PASSWORD")
-    POSTGRES_DB: str = os.getenv("POSTGRES_DB")
-    POSTGRES_HOST: str = os.getenv("POSTGRES_HOST", "db")
-    POSTGRES_PORT: str = os.getenv("POSTGRES_PORT", "5432")
+    class Config:
+        env_file = ".env"
+        env_file_encoding = "utf-8"
 
     @property
     def get_database_url(self) -> str:
-        """Get the database URL based on the environment"""
-        if os.environ.get("TESTING") == "True":
-            return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/test_db"
-        return f"postgresql://{self.POSTGRES_USER}:{self.POSTGRES_PASSWORD}@{self.POSTGRES_HOST}:{self.POSTGRES_PORT}/{self.POSTGRES_DB}"
+        """Return the database connection string.
 
-    # CORS Configuration
-    ALLOWED_ORIGINS: List[str] = ["http://localhost:3000"]
-
-    @field_validator("ALLOWED_ORIGINS", mode="before")
-    def assemble_cors_origins(cls, v: str | List[str]) -> List[str]:
-        if isinstance(v, str):
-            try:
-                return json.loads(v)
-            except json.JSONDecodeError:
-                return [i.strip() for i in v.split(",")]
-        elif isinstance(v, list):
-            return v
-        raise ValueError(v)
-
-    model_config = ConfigDict(case_sensitive=True, env_file=".env")
+        This property is provided for backward compatibility with code that
+        expects a ``get_database_url`` attribute on the settings object.  It
+        simply returns the value of ``DATABASE_URL``.  If you need to
+        construct the DSN from individual components or support a separate
+        test database, update this property accordingly.
+        """
+        return self.DATABASE_URL
 
 
+# Instantiate a global settings object that can be imported throughout the
+# application.  This ensures that environment variables are read once and
+# cached for reuse.
 settings = Settings()

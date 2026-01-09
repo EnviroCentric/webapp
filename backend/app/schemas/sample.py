@@ -3,11 +3,14 @@ from typing import Optional
 from pydantic import BaseModel, Field, field_validator, ValidationInfo
 
 class SampleBase(BaseModel):
-    address_id: int
     description: str = Field(..., min_length=1, max_length=255)
     cassette_barcode: str = Field(..., min_length=1)
 
 class SampleCreate(SampleBase):
+    project_id: int
+    visit_id: int
+    address_id: Optional[int] = None  # For backward compatibility, usually None in new system
+    sample_type: str = 'regular'  # regular, lab_blank, field_blank
     flow_rate: float = 12
     volume_required: float = 1000
 
@@ -32,6 +35,10 @@ class SampleUpdate(BaseModel):
 
 class SampleInDB(SampleBase):
     id: int
+    project_id: int
+    visit_id: Optional[int] = None
+    address_id: Optional[int] = None  # For backward compatibility
+    sample_type: str = 'regular'
     description: Optional[str] = None
     is_inside: Optional[bool] = None
     flow_rate: Optional[int] = None

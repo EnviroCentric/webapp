@@ -76,11 +76,11 @@ export default function Profile() {
   const handleNameSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/me`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/users/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
         },
         body: JSON.stringify({
           first_name: formData.first_name,
@@ -115,11 +115,11 @@ export default function Profile() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/users/self/password`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/users/me/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+          'Authorization': `Bearer ${sessionStorage.getItem('token')}`,
         },
         body: JSON.stringify({
           current_password: formData.current_password,

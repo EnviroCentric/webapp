@@ -4,11 +4,18 @@ from app.core.security import create_access_token, create_refresh_token, verify_
 from app.services.users import UserService
 from app.db.session import get_db
 import asyncpg
+import logging
 from app.schemas.user import UserCreate, UserResponse, TokenResponse, UserWithTokens, UserInDB
+from app.schemas.auth import RefreshTokenRequest
 from app.core.validators import validate_email
 from pydantic import BaseModel, field_validator
 
-router = APIRouter(tags=["auth"])
+logger = logging.getLogger(__name__)
+
+router = APIRouter(
+    tags=["Authentication"],
+    responses={401: {"description": "Authentication failed"}}
+)
 
 class RegisterRequest(UserCreate):
     password_confirm: str
@@ -64,40 +71,51 @@ async def login(
     db: asyncpg.Pool = Depends(get_db)
 ):
     """Login endpoint."""
-    user_service = UserService(db)
-    
-    # First check if user exists
-    user = await user_service.get_user_by_email(form_data.username)
-    if not user:
+    try:
+        user_service = UserService(db)
+        
+        # Check if user exists
+        user = await user_service.get_user_by_email(form_data.username)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Verify password
+        if not verify_password(form_data.password, user.hashed_password):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid credentials",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+        
+        # Check if user is active
+        if not user.is_active:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Inactive user"
+            )
+        
+        # Create tokens
+        access_token = create_access_token(subject=user.email)
+        refresh_token = create_refresh_token(subject=user.email)
+        
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer"
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Unexpected error in login: {e}")
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Internal server error"
         )
-    
-    # Then check password
-    if not verify_password(form_data.password, user.hashed_password):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-    
-    if not user.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Inactive user"
-        )
-    
-    access_token = create_access_token(subject=user.email)
-    refresh_token = create_refresh_token(subject=user.email)
-    return {
-        "access_token": access_token,
-        "refresh_token": refresh_token,
-        "token_type": "bearer"
-    }
-
-class RefreshTokenRequest(BaseModel):
-    refresh_token: str
 
 @router.post("/refresh", response_model=TokenResponse)
 async def refresh_token(

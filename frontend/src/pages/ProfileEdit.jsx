@@ -39,7 +39,7 @@ export default function ProfileEdit() {
     setSuccess(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/self`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/users/me`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

@@ -9,6 +9,7 @@ import Register from '../pages/Register';
 
 const navigation = [
   { name: "Home", href: "/", current: true },
+  { name: "Services", href: "/services", current: false },
   { name: "Dashboard", href: "/dashboard", current: false, requiresTechnician: true },
   { name: "Projects", href: "/projects", current: false, requiresSupervisor: true }
 ];
@@ -34,6 +35,8 @@ export default function Navbar() {
     opacity: 0,
     transform: 'translate(0, 0)',
   });
+  const animationFrameRef = useRef();
+  const lastScrollY = useRef(0);
 
   const isHomePage = location.pathname === '/';
   const isSuperuser = user?.is_superuser || user?.roles?.some(role => role.name.toLowerCase() === 'admin');
@@ -77,32 +80,70 @@ export default function Navbar() {
 
   useEffect(() => {
     const handleScroll = () => {
-      if (isHomePage) {
-        const scrollPosition = window.scrollY;
-        const maxScroll = 400;
-        
-        const progress = Math.min(1, scrollPosition / maxScroll);
-        // Start appearing when progress is > 0.7 (70% scrolled)
-        const adjustedProgress = Math.max(0, (progress - 0.7) / 0.3);
-        const opacity = Math.min(1, adjustedProgress * 1.5);
+      // Cancel the previous animation frame if it exists
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
 
-        setNavbarStyle({
-          opacity,
-          transform: 'translate(0, 0)',
+      animationFrameRef.current = requestAnimationFrame(() => {
+        if (isHomePage) {
+          const scrollPosition = window.scrollY;
+          
+          // Only update if scroll position changed significantly
+          if (Math.abs(scrollPosition - lastScrollY.current) < 3) return;
+          lastScrollY.current = scrollPosition;
+          
+          const maxScroll = Math.min(300, window.innerHeight * 0.45); // Match reduced logo section
+          
+          const progress = Math.min(1, scrollPosition / maxScroll);
+          // Start appearing when progress is > 0.65 (65% scrolled) for smoother transition
+          const adjustedProgress = Math.max(0, (progress - 0.65) / 0.35);
+          const opacity = Math.min(1, adjustedProgress * 1.2);
+
+          setNavbarStyle({
+            opacity,
+            transform: 'translate3d(0, 0, 0)',
+          });
+        } else {
+          // Always show logo on non-home pages
+          setNavbarStyle({
+            opacity: 1,
+            transform: 'translate3d(0, 0, 0)',
+          });
+        }
+      });
+    };
+
+    // Throttled scroll handler for better performance
+    let ticking = false;
+    const scrollHandler = () => {
+      if (!ticking) {
+        requestAnimationFrame(() => {
+          handleScroll();
+          ticking = false;
         });
-      } else {
-        // Always show logo on non-home pages
-        setNavbarStyle({
-          opacity: 1,
-          transform: 'translate(0, 0)',
-        });
+        ticking = true;
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', scrollHandler, { passive: true });
+    
+    // Handle resize for responsive behavior
+    const handleResize = () => {
+      handleScroll(); // Recalculate on resize
+    };
+    window.addEventListener('resize', handleResize, { passive: true });
+    
     // Set initial state
     handleScroll();
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    return () => {
+      window.removeEventListener('scroll', scrollHandler);
+      window.removeEventListener('resize', handleResize);
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
   }, [isHomePage]);
 
   const handleThemeToggle = () => {
@@ -137,11 +178,14 @@ export default function Navbar() {
                   <img 
                     src={logo} 
                     alt="Enviro-Centric Logo" 
-                    className="h-12 w-auto transition-all duration-300"
+                    className="h-8 sm:h-10 md:h-12 w-auto will-change-transform"
                     style={{
                       ...navbarStyle,
-                      transition: 'all 0.1s ease-out',
+                      transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      backfaceVisibility: 'hidden',
                     }}
+                    loading="eager"
+                    decoding="async"
                   />
                 </Link>
               </div>

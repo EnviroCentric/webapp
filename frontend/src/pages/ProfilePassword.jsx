@@ -36,7 +36,7 @@ export default function ProfilePassword() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/users/self/password`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/users/me/password`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

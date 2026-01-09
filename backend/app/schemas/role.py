@@ -1,49 +1,33 @@
 from typing import List, Optional
 from datetime import datetime
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, Field
 
 
 class RoleBase(BaseModel):
-    name: str
-    description: Optional[str] = None
+    name: str = Field(..., description="The name of the role")
+    description: Optional[str] = Field(None, description="The description of the role")
+    level: int = Field(..., description="The level of the role")
 
+class RoleCreate(RoleBase):
+    pass
 
-class RoleInternal(RoleBase):
-    level: int
-
-
-class RoleCreate(RoleInternal):
-    permissions: Optional[List[str]] = []
-
-
-class RoleUpdate(RoleInternal):
-    permissions: Optional[List[str]] = None
-
-
-class RoleInDB(RoleInternal):
-    id: int
-    created_at: datetime
-
-    model_config = ConfigDict(from_attributes=True)
-
+class RoleUpdate(RoleBase):
+    name: Optional[str] = Field(None, description="The name of the role")
+    description: Optional[str] = Field(None, description="The description of the role")
+    level: Optional[int] = Field(None, description="The level of the role")
 
 class RoleResponse(RoleBase):
-    id: int
-    level: int
-    created_at: datetime
-    permissions: List[str] = []
+    id: int = Field(..., description="The id of the role")
+    created_at: datetime = Field(..., description="The date and time the role was created")
+    updated_at: Optional[datetime] = Field(None, description="The date and time the role was last updated")
 
-    model_config = ConfigDict(from_attributes=True)
+    class Config:
+        from_attributes = True
 
+class RoleInDB(RoleBase):
+    id: int = Field(..., description="The id of the role")
+    created_at: datetime = Field(..., description="The date and time the role was created")
+    updated_at: Optional[datetime] = Field(None, description="The date and time the role was last updated")
 
-class RolePermissionUpdate(BaseModel):
-    permissions: List[str]
-
-
-class RoleOrder(BaseModel):
-    role_id: int
-    level: int
-
-
-class RoleReorder(BaseModel):
-    role_orders: List[RoleOrder]
+    class Config:
+        from_attributes = True

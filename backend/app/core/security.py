@@ -13,34 +13,55 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_V1_STR}/auth/login
 
 
 def create_access_token(
-    subject: Union[str, Any], expires_delta: timedelta = None, additional_claims: Dict = None
+    subject: Union[str, Any], expires_delta: timedelta | None = None, additional_claims: Dict | None = None
 ) -> str:
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(
-            minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES
-        )
-    to_encode = {"exp": expire, "sub": str(subject)}
+    """
+    Generate a JWT access token for the given subject.
+
+    If ``expires_delta`` is provided it should be a :class:`datetime.timedelta` and will
+    be added to the current UTC time to produce the expiration timestamp.  If
+    ``expires_delta`` is ``None`` the token will default to a two‑hour lifetime.
+    If you want to control the default lifetime globally you can set
+    ``settings.ACCESS_TOKEN_EXPIRE_MINUTES``.
+    """
+    # Default to a two‑hour access token if no explicit timedelta is provided.
+    if expires_delta is None:
+        if getattr(settings, "ACCESS_TOKEN_EXPIRE_MINUTES", None):
+            expires_delta = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
+        else:
+            expires_delta = timedelta(hours=2)
+    expire = datetime.utcnow() + expires_delta
+    to_encode: Dict[str, Any] = {"exp": expire, "sub": str(subject)}
+    # Merge in any custom claims (e.g. roles or superuser flag) so they are
+    # carried through in the token payload.
     if additional_claims:
         to_encode.update(additional_claims)
-    encoded_jwt = jwt.encode(
+    encoded_jwt: str = jwt.encode(
         to_encode, settings.JWT_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
     return encoded_jwt
 
 
 def create_refresh_token(
-    subject: Union[str, Any], expires_delta: timedelta = None
+    subject: Union[str, Any], expires_delta: timedelta | None = None
 ) -> str:
-    if expires_delta:
-        expire = datetime.utcnow() + expires_delta
-    else:
-        expire = datetime.utcnow() + timedelta(
-            minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES
-        )
-    to_encode = {"exp": expire, "sub": str(subject)}
-    encoded_jwt = jwt.encode(
+    """
+    Generate a JWT refresh token for the given subject.
+
+    Refresh tokens are intended to live longer than access tokens.  When
+    ``expires_delta`` is not provided this function will default to a four‑hour
+    lifetime, but will honor ``settings.REFRESH_TOKEN_EXPIRE_MINUTES`` if it is
+    defined on your settings object.
+    """
+    if expires_delta is None:
+        if getattr(settings, "REFRESH_TOKEN_EXPIRE_MINUTES", None):
+            expires_delta = timedelta(minutes=settings.REFRESH_TOKEN_EXPIRE_MINUTES)
+        else:
+            # Give refresh tokens a longer lifetime than access tokens.
+            expires_delta = timedelta(hours=4)
+    expire = datetime.utcnow() + expires_delta
+    to_encode: Dict[str, Any] = {"exp": expire, "sub": str(subject)}
+    encoded_jwt: str = jwt.encode(
         to_encode, settings.JWT_REFRESH_SECRET_KEY, algorithm=settings.JWT_ALGORITHM
     )
     return encoded_jwt
@@ -106,6 +127,6 @@ async def get_current_user(
     if "is_superuser" in payload:
         user_dict["is_superuser"] = payload["is_superuser"]
     # Always load roles with permissions from DB
-    roles = await db.fetch(query_manager.get_user_roles_with_permissions, user["id"])
+    roles = await db.fetch(query_manager.get_user_roles, user["id"])
     user_dict["roles"] = [dict(row) for row in roles]
     return user_dict
