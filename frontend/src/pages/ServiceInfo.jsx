@@ -34,52 +34,48 @@ export default function ServiceInfo() {
       ),
       services: [
         {
-          name: 'Asbestos Inspections',
-          description: 'Comprehensive visual inspections to identify potential asbestos-containing materials (ACMs) in buildings and structures.',
+          name: 'Asbestos Inspections & Surveys',
+          description:
+            'Combined inspections and surveys to identify and assess asbestos-containing materials (ACMs) for ongoing management, renovation, or demolition projects.',
           details: [
-            'Visual assessment of all accessible areas',
-            'Material sampling when necessary',
-            'Detailed photographic documentation',
-            'Comprehensive written reports with recommendations'
-          ]
-        },
-        {
-          name: 'Asbestos Surveys',
-          description: 'Detailed surveys for renovation, demolition, or management purposes to locate and assess asbestos materials.',
-          details: [
+            'Visual assessment of accessible areas',
+            'Bulk sampling',
             'Management surveys for occupied buildings',
-            'Refurbishment/demolition surveys',
-            'Re-inspection surveys',
-            'Priority assessment and risk evaluation'
-          ]
+            'Renovation/demolition surveys',
+            'AHERA inspection and re-inspection surveys',
+            'Detailed photographic documentation',
+            'Comprehensive written reports with risk evaluation and recommendations',
+          ],
         },
         {
           name: 'Project Monitoring',
-          description: 'On-site oversight during asbestos abatement projects to ensure proper procedures and compliance.',
+          description:
+            'On-site oversight during asbestos abatement projects to help ensure proper procedures and regulatory compliance.',
           details: [
             'Pre-abatement setup inspection',
             'Daily monitoring during abatement',
-            'Air monitoring and testing',
-            'Final clearance inspection and certification'
-          ]
+            'Air sampling and analysis',
+            'Final clearance inspection and certification',
+          ],
         },
         {
           name: 'Clearance Testing',
-          description: 'Post-abatement clearance inspections to verify successful completion of asbestos removal work.',
+          description:
+            'Post-abatement clearance inspections following asbestos removal work.',
           details: [
             'Visual inspection of work area',
             'Air sampling and analysis',
             'Surface sampling when required',
-            'Clearance certification documentation'
-          ]
-        }
+            'Clearance certification documentation',
+          ],
+        },
       ]
     },
     {
       id: 'lead',
       title: 'Lead Services',
       subtitle: 'Lead-Based Paint Assessment & Management',
-      description: 'Expert lead inspection, risk assessment, and monitoring services for residential and commercial properties.',
+      description: 'Expert lead inspection, risk assessment, and monitoring services for residential and commercial buildings.',
       icon: (
         <svg className="w-16 h-16 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -88,11 +84,11 @@ export default function ServiceInfo() {
       services: [
         {
           name: 'Lead Inspections',
-          description: 'Systematic inspection to determine the presence of lead-based paint in residential and commercial properties.',
+          description: 'Systematic inspection to determine the presence of lead-based paint in residential and commercial buildings.',
           details: [
             'XRF testing of painted surfaces',
             'Paint chip sampling and laboratory analysis',
-            'Documentation of all lead-based paint locations',
+            'Documentation of Identified lead-based paint locations',
             'Comprehensive inspection reports'
           ]
         },
@@ -108,11 +104,11 @@ export default function ServiceInfo() {
         },
         {
           name: 'Clearance Testing',
-          description: 'Post-renovation clearance testing to ensure lead-safe work practices were followed.',
+          description: 'Post-renovation clearance testing.',
           details: [
-            'Visual assessment of work quality',
+            'Visual assessment',
             'Dust wipe sampling',
-            'Soil sampling when applicable',
+            'Soil sampling',
             'Clearance certification'
           ]
         },
@@ -123,7 +119,7 @@ export default function ServiceInfo() {
             'Pre-work setup inspection',
             'Daily monitoring during work',
             'Work practice evaluation',
-            'Final clearance inspection'
+            'Final clearance inspection and certification'
           ]
         }
       ]
@@ -132,7 +128,7 @@ export default function ServiceInfo() {
       id: 'microbial',
       title: 'Microbial Services',
       subtitle: 'Mold & Indoor Air Quality Solutions',
-      description: 'Professional mold inspection, assessment, and clearance services to maintain healthy indoor environments.',
+      description: 'Professional mold inspection, assessment, and clearance services.',
       icon: (
         <svg className="w-16 h-16 text-purple-600 dark:text-purple-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
@@ -141,17 +137,17 @@ export default function ServiceInfo() {
       services: [
         {
           name: 'Mold Inspections',
-          description: 'Comprehensive visual inspections to identify mold growth and moisture problems in buildings.',
+          description: 'Comprehensive visual inspections to identify mold growth and moisture instrusion in residential and commercial buildings.',
           details: [
-            'Visual inspection of all accessible areas',
+            'Visual inspection of accessible areas',
             'Moisture detection and measurement',
             'Air and surface sampling',
-            'Detailed inspection reports with recommendations'
+            'Detailed inspection reports with recommendations',
           ]
         },
         {
           name: 'Indoor Air Quality Surveys',
-          description: 'Assessment of indoor air quality conditions and identification of potential health concerns.',
+          description: 'Assessment of indoor air quality conditions.',
           details: [
             'Air sampling for mold spores',
             'Particle counting and analysis',
@@ -161,7 +157,7 @@ export default function ServiceInfo() {
         },
         {
           name: 'Clearance Testing',
-          description: 'Post-remediation clearance inspections to verify successful completion of mold removal work.',
+          description: 'Post-remediation clearance inspections following mold removal work.',
           details: [
             'Visual inspection of remediated areas',
             'Post-remediation air sampling',
@@ -186,15 +182,24 @@ export default function ServiceInfo() {
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900 pt-16">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-purple-700 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-          <div className="text-center">
+      <div
+        className="relative text-white"
+        style={{
+          backgroundImage: "url('/sequoia.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="bg-gray-900/50">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">
               Our Services
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto">
               Comprehensive environmental consulting services for asbestos, lead, and microbial assessments
             </p>
+            </div>
           </div>
         </div>
       </div>

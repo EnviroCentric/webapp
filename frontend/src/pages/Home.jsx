@@ -191,29 +191,18 @@ export default function Home() {
                 </p>
               </div>
               <div>
-                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Our Expertise</h3>
+                <h3 className="text-2xl font-semibold text-gray-900 dark:text-white mb-4">Certifications</h3>
                 <ul className="text-lg text-gray-600 dark:text-gray-300 space-y-2">
-                  <li>Asbestos Consultants</li>
+                  <li>CA Certified Abestos Consultants</li>
                   <li>CDPH Lead Inspectors</li>
-                  <li>Risk Assessors</li>
-                  <li>Project Monitors</li>
+                  <li>CDPH Risk Assessors</li>
+                  <li>CDPH Project Monitors</li>
                 </ul>
               </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Credentials and Contact Section */}
-        <section className="py-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">
-            Our Information
-          </h2>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               {/* Credentials Section */}
-              <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
+              
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  Our Credentials
+                  Credentials
                 </h3>
                 <div className="flex flex-col space-y-6">
                   <div>
@@ -232,7 +221,19 @@ export default function Home() {
                     </p>
                   </div>
                 </div>
-              </div>
+              
+            </div>
+          </div>
+        </section>
+
+        {/* Credentials and Contact Section */}
+        <section className="py-12 text-center">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">
+            Our Information
+          </h2>
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              
 
               {/* Contact Section */}
               <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
