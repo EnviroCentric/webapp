@@ -7,12 +7,20 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gray-300 dark:bg-gray-900 transition-colors duration-200">
-      {/* Large Logo Section */}
-      <div className="flex justify-center items-center min-h-[40vh] sm:min-h-[45vh] lg:min-h-[50vh] py-8">
+      {/* Large Logo Section with Background */}
+      <div 
+        className="relative flex justify-center items-center min-h-[40vh] sm:min-h-[45vh] lg:min-h-[50vh] py-8"
+        style={{
+          backgroundImage: "url('/sequoia.jpg')",
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }}
+      >
+        <div className="absolute inset-0 bg-gray-900/50"></div>
         <img 
           src={logo} 
           alt="Enviro-Centric Logo" 
-          className="max-w-[80vw] sm:max-w-md md:max-w-lg lg:max-w-xl h-auto"
+          className="relative z-10 max-w-[85vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto"
           loading="eager"
           decoding="async"
         />

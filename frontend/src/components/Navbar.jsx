@@ -28,6 +28,7 @@ export default function Navbar() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [changed, setChanged] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
@@ -101,6 +102,23 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16">
             {/* Logo and Navigation Links */}
             <div className="flex items-center">
+              {/* Mobile menu button - left side */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 rounded-lg text-gray-900 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 mr-3"
+                aria-label="Toggle mobile menu"
+              >
+                {isMobileMenuOpen ? (
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+
               {!isHomePage && (
                 <div className="flex-shrink-0">
                   <Link to="/" className="flex items-center">
@@ -242,6 +260,38 @@ export default function Navbar() {
             </div>
           </div>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {navigation
+                .filter(item => {
+                  if (item.requiresSupervisor) {
+                    return userRoleLevel >= 80;
+                  }
+                  if (item.requiresTechnician) {
+                    return userRoleLevel >= 50;
+                  }
+                  return true;
+                })
+                .map((item) => (
+                  <Link
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={`${
+                      item.current
+                        ? 'bg-gray-900 text-white dark:bg-gray-900 dark:text-white'
+                        : 'text-gray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                    } block px-3 py-2 rounded-md text-base font-medium`}
+                  >
+                    {item.name}
+                  </Link>
+                ))}
+            </div>
+          </div>
+        )}
       </nav>
 
       <Login 
