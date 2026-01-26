@@ -1,113 +1,24 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+import React from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
 
 export default function Home() {
-  const [logoStyle, setLogoStyle] = useState({
-    height: '400px',
-    opacity: 1,
-    transform: 'translate(0, 0)',
-  });
-  const animationFrameRef = useRef();
-  const lastScrollY = useRef(0);
-
-  const handleScroll = useCallback(() => {
-    // Cancel the previous animation frame if it exists
-    if (animationFrameRef.current) {
-      cancelAnimationFrame(animationFrameRef.current);
-    }
-
-    animationFrameRef.current = requestAnimationFrame(() => {
-      const scrollPosition = window.scrollY;
-      
-      // Only update if scroll position changed significantly
-      if (Math.abs(scrollPosition - lastScrollY.current) < 5) return;
-      lastScrollY.current = scrollPosition;
-
-      const maxScroll = Math.min(300, window.innerHeight * 0.45); // Reduced for more compact layout
-      const minSize = Math.max(48, window.innerWidth * 0.08); // Responsive min size
-      const maxSize = Math.min(350, window.innerWidth * 0.35, window.innerHeight * 0.4); // Reduced for more compact layout
-      
-      const progress = Math.min(1, scrollPosition / maxScroll);
-      const newHeight = maxSize - (progress * (maxSize - minSize));
-      
-      // Smoother opacity transition
-      const opacity = Math.max(0, 1 - (progress * 1.2));
-      
-      // Responsive translation calculations
-      const viewportWidth = window.innerWidth;
-      const viewportHeight = window.innerHeight;
-      
-      // Calculate translation based on viewport size with better responsive behavior
-      const translateXBase = viewportWidth < 768 ? viewportWidth * 0.3 : viewportWidth * 0.4;
-      const translateYBase = viewportHeight < 600 ? viewportHeight * 0.3 : viewportHeight * 0.35;
-      
-      const translateX = -progress * translateXBase;
-      const translateY = -progress * translateYBase;
-
-      setLogoStyle({
-        height: `${newHeight}px`,
-        opacity,
-        transform: `translate3d(${translateX}px, ${translateY}px, 0)`,
-      });
-    });
-  }, []);
-
-  useEffect(() => {
-    // Throttled scroll handler
-    let ticking = false;
-    const scrollHandler = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', scrollHandler, { passive: true });
-    
-    // Handle resize for responsive behavior
-    const handleResize = () => {
-      handleScroll(); // Recalculate on resize
-    };
-    window.addEventListener('resize', handleResize, { passive: true });
-    
-    // Initial calculation
-    handleScroll();
-    
-    return () => {
-      window.removeEventListener('scroll', scrollHandler);
-      window.removeEventListener('resize', handleResize);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [handleScroll]);
 
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 transition-colors duration-200">
+    <div className="min-h-screen bg-gray-300 dark:bg-gray-900 transition-colors duration-200">
       {/* Large Logo Section */}
-      <div className="flex justify-center items-center min-h-[45vh] sm:min-h-[50vh] lg:min-h-[55vh] relative overflow-hidden py-4">
+      <div className="flex justify-center items-center min-h-[40vh] sm:min-h-[45vh] lg:min-h-[50vh] py-8">
         <img 
           src={logo} 
           alt="Enviro-Centric Logo" 
-          className="absolute max-w-[90vw] sm:max-w-none will-change-transform"
-          style={{
-            ...logoStyle,
-            width: 'auto',
-            transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-            backfaceVisibility: 'hidden',
-            perspective: '1000px',
-          }}
+          className="max-w-[80vw] sm:max-w-md md:max-w-lg lg:max-w-xl h-auto"
           loading="eager"
           decoding="async"
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-2" style={{ marginTop: '-30px' }}>
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Services Section */}
         <section className="py-12 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">

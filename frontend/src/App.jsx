@@ -30,9 +30,9 @@ function App() {
       <RolesProvider>
         <PermissionsProvider>
           <ThemeProvider>
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+            <div className="min-h-screen bg-gray-300 dark:bg-gray-900">
               <Navbar />
-              <main className="pt-16 pb-6 min-h-[calc(100vh-4rem)] bg-white dark:bg-gray-900">
+              <main className="pt-16 pb-6 min-h-[calc(100vh-4rem)] bg-gray-300 dark:bg-gray-900">
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/services" element={<ServiceInfo />} />

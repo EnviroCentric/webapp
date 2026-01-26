@@ -2,7 +2,7 @@ import React from 'react';
 
 export default function Info() {
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 pt-16">
+    <div className="min-h-screen bg-gray-300 dark:bg-gray-900 pt-16">
       {/* Hero Section */}
       <div
         className="relative text-white"
