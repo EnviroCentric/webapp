@@ -5,6 +5,7 @@ import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import ServiceInfo from './pages/ServiceInfo';
+import Info from './pages/Info';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ProfileEdit from './pages/ProfileEdit';
@@ -16,6 +17,9 @@ import UserManagement from './pages/UserManagement';
 import Projects from './pages/Projects';
 import ProjectDashboard from './pages/ProjectDashboard';
 import SampleCollection from './pages/SampleCollection';
+import CompanyManagement from './pages/CompanyManagement';
+import CompanyDetails from './pages/CompanyDetails';
+import CompanyDashboard from './pages/CompanyDashboard';
 
 import { RolesProvider } from './context/RolesContext';
 import { PermissionsProvider } from './context/PermissionsContext';
@@ -32,6 +36,7 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/services" element={<ServiceInfo />} />
+                  <Route path="/info" element={<Info />} />
                   <Route
                     path="/dashboard"
                     element={
@@ -95,6 +100,30 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <UserManagement />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/companies"
+                    element={
+                      <ProtectedRoute>
+                        <CompanyManagement />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/companies/:companyId"
+                    element={
+                      <ProtectedRoute>
+                        <CompanyDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/company/me"
+                    element={
+                      <ProtectedRoute>
+                        <CompanyDashboard />
                       </ProtectedRoute>
                     }
                   />

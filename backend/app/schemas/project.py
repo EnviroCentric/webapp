@@ -22,7 +22,7 @@ class ProjectUpdate(BaseModel):
 
 class ProjectResponse(BaseModel):
     id: int
-    company_id: int
+    company_id: Optional[int] = None
     company_name: Optional[str] = None
     name: str
     description: Optional[str] = None

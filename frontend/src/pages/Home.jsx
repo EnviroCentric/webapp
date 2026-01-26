@@ -206,13 +206,6 @@ export default function Home() {
                 </h3>
                 <div className="flex flex-col space-y-6">
                   <div>
-                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Licenses</h4>
-                    <p className="text-gray-600 dark:text-gray-300">
-                      CAC 23-7444<br />
-                      LRC 00002495
-                    </p>
-                  </div>
-                  <div>
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">NAICS Codes</h4>
                     <p className="text-gray-600 dark:text-gray-300">
                       236220, 238320, 238910,<br />
@@ -226,31 +219,6 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Credentials and Contact Section */}
-        <section className="py-12 text-center">
-          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">
-            Our Information
-          </h2>
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              
-
-              {/* Contact Section */}
-              <div className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700">
-                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
-                  Contact Us
-                </h3>
-                <div className="space-y-4 text-gray-600 dark:text-gray-300">
-                  <p>Phone: (714) 335-5973</p>
-                  <p>Phone: (619) 779-1698</p>
-                  <p>Email: info@enviro-centric.com</p>
-                  <p>P.O. Box 122202</p>
-                  <p>Chula Vista, CA 91912</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import Register from '../pages/Register';
 const navigation = [
   { name: "Home", href: "/", current: true },
   { name: "Services", href: "/services", current: false },
+  { name: "Info", href: "/info", current: false },
   { name: "Dashboard", href: "/dashboard", current: false, requiresTechnician: true },
   { name: "Projects", href: "/projects", current: false, requiresSupervisor: true }
 ];

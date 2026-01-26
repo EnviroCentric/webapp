@@ -583,10 +583,10 @@ async def assign_technician_to_project(
         )
     
     role_level = await get_user_role_level(db, current_user.id)
-    if role_level < 90:  # Manager level required
+    if role_level < 80:  # Supervisor level required
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only managers and higher can assign technicians"
+            detail="Only supervisors and higher can assign technicians"
         )
     
     # Access control for assigning technicians
@@ -653,10 +653,10 @@ async def unassign_technician_from_project(
         )
     
     role_level = await get_user_role_level(db, current_user.id)
-    if role_level < 90:  # Manager level required
+    if role_level < 80:  # Supervisor level required
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only managers and higher can unassign technicians"
+            detail="Only supervisors and higher can unassign technicians"
         )
     
     # Access control for unassigning technicians

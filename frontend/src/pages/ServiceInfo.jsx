@@ -87,7 +87,7 @@ export default function ServiceInfo() {
           description: 'Systematic inspection to determine the presence of lead-based paint in residential and commercial buildings.',
           details: [
             'XRF testing of painted surfaces',
-            'Paint chip sampling and laboratory analysis',
+            'Paint chip sampling',
             'Documentation of Identified lead-based paint locations',
             'Comprehensive inspection reports'
           ]
@@ -172,7 +172,7 @@ export default function ServiceInfo() {
             'Moisture meter readings',
             'Thermal imaging inspection',
             'Humidity level monitoring',
-            'Water intrusion source identification'
+            'PotentiaL Water intrusion source identification'
           ]
         }
       ]
@@ -229,11 +229,15 @@ export default function ServiceInfo() {
             </div>
 
             {/* Service Details Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div className={`grid gap-8 ${
+              service.services.length === 3 
+                ? 'lg:grid-cols-[1fr_minmax(400px,550px)] lg:grid-rows-2 lg:[&>*:first-child]:row-span-2 lg:[&>*:first-child]:self-center'
+                : 'grid-cols-1 lg:grid-cols-2'
+            }`}>
               {service.services.map((subService) => (
                 <div
                   key={subService.name}
-                  className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300"
+                  className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 h-fit"
                 >
                   <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                     {subService.name}

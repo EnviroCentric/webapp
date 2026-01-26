@@ -21,6 +21,16 @@ export default function UserManagement() {
   const [hasAccess, setHasAccess] = useState(false);
   const [showConfirmationModal, setShowConfirmationModal] = useState(false);
   const fetchInProgress = useRef(false);
+
+  // Helper to format role names for display (remove underscores, capitalize words)
+  const formatRoleName = (name) => {
+    if (!name || typeof name !== 'string') return 'Unnamed Role';
+    return name
+      .replace(/_/g, ' ')
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
   const lastFetchTime = useRef(0);
   const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 
@@ -221,9 +231,7 @@ export default function UserManagement() {
         key={`user-${user.id}-role-${role?.id || role?.role_id || index}`}
         className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
       >
-        {(role?.name || 'Unnamed Role').split(' ')
-          .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-          .join(' ')}
+        {formatRoleName(role?.name)}
       </span>
     ));
   };
@@ -250,9 +258,7 @@ export default function UserManagement() {
                     className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 dark:border-gray-600"
                   />
                   <span className="ml-3 text-sm font-medium text-gray-900 dark:text-white">
-                    {(role?.name || 'Unnamed Role').split(' ')
-                      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                      .join(' ')}
+                    {formatRoleName(role?.name)}
                   </span>
                 </div>
                 {role?.description && (
@@ -573,9 +579,7 @@ export default function UserManagement() {
                                 key={`selected-role-${role?.id || role?.role_id || index}`}
                                 className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
                               >
-                                {(role?.name || 'Unnamed Role').split(' ')
-                                  .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                                  .join(' ')}
+                                {formatRoleName(role?.name)}
                               </span>
                             ))
                         ) : (
