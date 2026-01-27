@@ -16,7 +16,7 @@ export default function Home() {
           backgroundPosition: 'center',
         }}
       >
-        <div className="absolute inset-0 bg-gray-900/50"></div>
+        <div className="absolute inset-0 bg-gray-900/70"></div>
         <img 
           src={logo} 
           alt="Enviro-Centric Logo" 
