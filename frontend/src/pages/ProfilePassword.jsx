@@ -1,10 +1,13 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import api from '../services/api';
 
 export default function ProfilePassword() {
-  const { token } = useAuth();
+  const { user, refreshUserData, getPostLoginRoute } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const forced = !!(user?.must_change_password || location.state?.forced);
   const [formData, setFormData] = useState({
     current_password: '',
     new_password: '',
@@ -36,29 +39,21 @@ export default function ProfilePassword() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/users/me/password`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({
-          current_password: formData.current_password,
-          new_password: formData.new_password,
-        }),
+      await api.put('/api/v1/users/me/password', {
+        current_password: formData.current_password,
+        new_password: formData.new_password,
       });
 
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Failed to update password');
-      }
-
+      const updatedUser = await refreshUserData();
       setSuccess('Password updated successfully');
+
+      const destination = getPostLoginRoute(updatedUser);
       setTimeout(() => {
-        navigate('/profile');
-      }, 2000);
+        navigate(destination, { replace: true });
+      }, 800);
     } catch (err) {
-      setError(err.message);
+      const detail = err?.response?.data?.detail;
+      setError(detail || err.message || 'Failed to update password');
     } finally {
       setIsLoading(false);
     }
@@ -73,6 +68,11 @@ export default function ProfilePassword() {
           </div>
 
           <div className="p-6">
+            {forced && (
+              <div className="mb-4 p-4 bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 rounded-md">
+                You must change your password before continuing.
+              </div>
+            )}
             {error && (
               <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-200 rounded-md">
                 {error}
@@ -133,13 +133,15 @@ export default function ProfilePassword() {
               </div>
 
               <div className="flex justify-end space-x-4">
-                <button
-                  type="button"
-                  onClick={() => navigate('/profile')}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
-                >
-                  Cancel
-                </button>
+                {!forced && (
+                  <button
+                    type="button"
+                    onClick={() => navigate('/profile')}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-md"
+                  >
+                    Cancel
+                  </button>
+                )}
                 <button
                   type="submit"
                   disabled={isLoading}

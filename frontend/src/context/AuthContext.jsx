@@ -21,14 +21,31 @@ export function AuthProvider({ children }) {
   const lastFetchTime = useRef(0);
   const CACHE_DURATION = 10 * 60 * 1000; // 10 minutes in milliseconds
 
+  const getPostLoginRoute = (userData) => {
+    if (!userData) return '/dashboard';
+
+    if (userData.must_change_password) return '/profile/password';
+
+    const roles = userData.roles || [];
+    const roleLevel = Math.max(...roles.map(r => r.level || 0), 0);
+    const hasClientRole = roles.some(r => (r.name || '').toLowerCase() === 'client');
+
+    // Client = has client role + company_id set + not admin.
+    if (hasClientRole && userData.company_id && roleLevel < 100) {
+      return '/company/me';
+    }
+
+    return '/dashboard';
+  };
+
   const fetchUserData = async (force = false) => {
     const now = Date.now();
     if (!force && user && now - lastFetchTime.current < CACHE_DURATION) {
-      return; // Use cached data if it's still valid
+      return user; // Use cached data if it's still valid
     }
 
     if (fetchInProgress.current) {
-      return; // Prevent concurrent fetches
+      return user; // Prevent concurrent fetches
     }
 
     try {
@@ -37,9 +54,11 @@ export function AuthProvider({ children }) {
       setUser(userData);
       setIsAuthenticated(true);
       lastFetchTime.current = now;
+      return userData;
     } catch (error) {
       console.error('Error fetching user data:', error);
       logout();
+      return null;
     } finally {
       setLoading(false);
       fetchInProgress.current = false;
@@ -61,25 +80,25 @@ export function AuthProvider({ children }) {
   }, []);
 
   const login = async (email, password) => {
-    try {
-      const response = await loginService(email, password);
-      setToken(getAuthToken());
-      await fetchUserData(true); // Force fetch on login
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await loginService(email, password);
+    setToken(getAuthToken());
+    const userData = await fetchUserData(true); // Force fetch on login
+    return {
+      ...response,
+      user: userData,
+      destination: getPostLoginRoute(userData),
+    };
   };
 
   const register = async (userData) => {
-    try {
-      const response = await registerService(userData);
-      setToken(getAuthToken());
-      await fetchUserData(true); // Force fetch after registration
-      return response;
-    } catch (error) {
-      throw error;
-    }
+    const response = await registerService(userData);
+    setToken(getAuthToken());
+    const createdUser = await fetchUserData(true); // Force fetch after registration
+    return {
+      ...response,
+      user: createdUser,
+      destination: getPostLoginRoute(createdUser),
+    };
   };
 
   const logout = () => {
@@ -91,7 +110,7 @@ export function AuthProvider({ children }) {
   };
 
   const refreshUserData = async () => {
-    await fetchUserData(true); // Force refresh
+    return await fetchUserData(true); // Force refresh
   };
 
   const value = {
@@ -103,7 +122,8 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
-    refreshUserData
+    refreshUserData,
+    getPostLoginRoute,
   };
 
   return (

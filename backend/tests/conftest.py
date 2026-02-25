@@ -1,279 +1,263 @@
-import pytest
-import logging
-import asyncio
 import os
-from typing import AsyncGenerator, Generator
+
+# IMPORTANT: set required environment variables before importing the app/settings.
+os.environ.setdefault("TESTING", "True")
+os.environ.setdefault("JWT_SECRET_KEY", "test-secret-key")
+os.environ.setdefault("JWT_REFRESH_SECRET_KEY", "test-refresh-secret-key")
+os.environ.setdefault("JWT_ALGORITHM", "HS256")
+os.environ.setdefault("ACCESS_TOKEN_EXPIRE_MINUTES", "30")
+os.environ.setdefault("REFRESH_TOKEN_EXPIRE_MINUTES", "43200")
+os.environ.setdefault("ADMIN_CREATION_SECRET", "test-admin-secret")
+os.environ.setdefault("ALLOWED_ORIGINS", "*")
+os.environ.setdefault("BACKEND_PORT", "8000")
+os.environ.setdefault("GOOGLE_MAPS_API_KEY", "test-google-maps-key")
+os.environ.setdefault("REPORTS_STORAGE_DIR", "/tmp/reports")
+
+# Database defaults (works in docker-compose where postgres is reachable as `db`).
+os.environ.setdefault("POSTGRES_USER", "postgres")
+os.environ.setdefault("POSTGRES_PASSWORD", "postgres")
+os.environ.setdefault("POSTGRES_DB", "postgres")
+
+# Force tests to use a dedicated test database derived from the configured DATABASE_URL.
+# This avoids dropping/truncating the developer DB/volume.
+if "DATABASE_URL" not in os.environ:
+    os.environ["DATABASE_URL"] = (
+        f"postgresql://{os.environ['POSTGRES_USER']}:{os.environ['POSTGRES_PASSWORD']}@db:5432/{os.environ['POSTGRES_DB']}"
+    )
+
+from urllib.parse import urlparse as _urlparse
+_parsed = _urlparse(os.environ["DATABASE_URL"])
+_base_db = (_parsed.path or "").lstrip("/") or os.environ.get("POSTGRES_DB", "postgres")
+_test_db = f"{_base_db}_test"
+os.environ["DATABASE_URL"] = _parsed._replace(path=f"/{_test_db}").geturl()
+
+import asyncio
+import logging
+from typing import AsyncGenerator
+from urllib.parse import urlparse
+
+import pytest
 from asyncpg import create_pool, Pool
-from fastapi.testclient import TestClient
 from httpx import AsyncClient, ASGITransport
 
 from app.main import app
 from app.core.config import settings
-from app.core.security import create_access_token, get_password_hash
+from app.core.security import create_access_token
 from app.schemas.user import UserCreate, UserResponse
 from app.services.users import UserService
 from app.services.roles import RoleService
 from app.db.session import get_db
+from app.db.migrate import run_migrations
 
-# Set test environment
-os.environ["TESTING"] = "True"
-os.environ["JWT_SECRET_KEY"] = "test-secret-key"
-os.environ["JWT_REFRESH_SECRET_KEY"] = "test-refresh-secret-key"
-
-# Configure logging
-logging.basicConfig(level=logging.DEBUG)
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Test database URL
 TEST_DATABASE_URL = settings.get_database_url
 
-@pytest.fixture(scope="session")
-def event_loop() -> Generator:
-    """Create an instance of the default event loop for each test case."""
-    loop = asyncio.get_event_loop_policy().new_event_loop()
-    yield loop
-    loop.close()
 
-@pytest.fixture(scope="session")
-async def create_test_database():
-    """Create test database and tables."""
-    # Connect to default database to create test database
-    default_pool = await create_pool(
-        settings.get_database_url.replace("/test_db", "/postgres"),
-        command_timeout=60
-    )
-    
-    async with default_pool.acquire() as conn:
-        # Drop test database if it exists
-        await conn.execute("DROP DATABASE IF EXISTS test_db")
-        # Create test database
-        await conn.execute("CREATE DATABASE test_db")
-    
-    await default_pool.close()
-    
-    # Create tables in test database using migrations
-    from app.db.migrate import run_migrations
+def _admin_dsn_from_test_dsn(test_dsn: str) -> tuple[str, str]:
+    parsed = urlparse(test_dsn)
+    db_name = (parsed.path or "").lstrip("/") or "test_db"
+
+    # Preserve any URL encoding in credentials by reusing the parsed URL.
+    admin_dsn = parsed._replace(path="/postgres").geturl()
+    return admin_dsn, db_name
+
+
+async def _create_test_database_async():
+    """Create a clean test database and apply migrations."""
+    admin_dsn, db_name = _admin_dsn_from_test_dsn(TEST_DATABASE_URL)
+
+    default_pool = await create_pool(admin_dsn, command_timeout=60)
+    try:
+        async with default_pool.acquire() as conn:
+            # Terminate any connections to allow DROP DATABASE.
+            await conn.execute(
+                """
+                SELECT pg_terminate_backend(pid)
+                FROM pg_stat_activity
+                WHERE datname = $1 AND pid <> pg_backend_pid();
+                """,
+                db_name,
+            )
+            await conn.execute(f'DROP DATABASE IF EXISTS "{db_name}"')
+            await conn.execute(f'CREATE DATABASE "{db_name}"')
+    finally:
+        await default_pool.close()
+
     await run_migrations()
+
+
+@pytest.fixture(scope="session", autouse=True)
+def create_test_database():
+    # Avoid pytest-asyncio scope issues by running session setup in a dedicated loop.
+    asyncio.run(_create_test_database_async())
+
 
 @pytest.fixture
 async def db_pool(create_test_database) -> AsyncGenerator[Pool, None]:
-    """Create a fresh database pool for each test."""
     pool = await create_pool(TEST_DATABASE_URL, command_timeout=60)
-    yield pool
-    # Clean up the tables after each test
-    async with pool.acquire() as conn:
-        await conn.execute("DROP VIEW IF EXISTS user_roles_with_permissions")
-        await conn.execute("TRUNCATE TABLE project_technicians RESTART IDENTITY CASCADE")
-        await conn.execute("TRUNCATE TABLE projects RESTART IDENTITY CASCADE")
-        await conn.execute("TRUNCATE TABLE addresses RESTART IDENTITY CASCADE")
-        await conn.execute("TRUNCATE TABLE user_roles RESTART IDENTITY CASCADE")
-        await conn.execute("TRUNCATE TABLE role_permissions RESTART IDENTITY CASCADE")
-        await conn.execute("TRUNCATE TABLE permissions RESTART IDENTITY CASCADE")
-        await conn.execute("TRUNCATE TABLE roles RESTART IDENTITY CASCADE")
-        await conn.execute("TRUNCATE TABLE users RESTART IDENTITY CASCADE")
-        
-        # Re-create the view
-        await conn.execute("""
-            CREATE OR REPLACE VIEW user_roles_with_permissions AS
-            SELECT 
-                ur.user_id,
-                r.id,
-                r.name,
-                r.description,
-                r.level,
-                r.created_at,
-                COALESCE(array_agg(p.name ORDER BY p.name) FILTER (WHERE p.name IS NOT NULL), '{}') AS permissions
-            FROM user_roles ur
-            JOIN roles r ON ur.role_id = r.id
-            LEFT JOIN role_permissions rp ON r.id = rp.role_id
-            LEFT JOIN permissions p ON rp.permission_id = p.id
-            GROUP BY ur.user_id, r.id, r.name, r.description, r.level, r.created_at
-        """)
-        
-        # Re-insert default roles
-        await conn.execute("""
-            INSERT INTO roles (name, description, level)
-            VALUES
-                ('admin', 'Administrator with full system access', 100),
-                ('manager', 'Manager with elevated access', 90),
-                ('supervisor', 'Supervisor with team management access', 80),
-                ('technician', 'Technician with project management access', 50)
-            ON CONFLICT (name) DO UPDATE SET level = EXCLUDED.level
-        """)
-        
-        # Re-insert manage_users permission
-        await conn.execute("""
-            INSERT INTO permissions (name, description)
-            VALUES ('manage_users', 'Permission to manage user accounts and access')
-            ON CONFLICT (name) DO NOTHING
-        """)
-        
-        # Re-assign manage_users permission to manager and supervisor
-        await conn.execute("""
-            INSERT INTO role_permissions (role_id, permission_id)
-            SELECT r.id, p.id
-            FROM roles r, permissions p
-            WHERE r.name IN ('manager', 'supervisor') AND p.name = 'manage_users'
-            ON CONFLICT DO NOTHING
-        """)
-        
-        # Re-assign all permissions to admin
-        await conn.execute("""
-            INSERT INTO role_permissions (role_id, permission_id)
-            SELECT r.id, p.id
-            FROM roles r, permissions p
-            WHERE r.name = 'admin'
-            ON CONFLICT DO NOTHING
-        """)
-    
-    await pool.close()
+    try:
+        yield pool
+    finally:
+        async with pool.acquire() as conn:
+            # Reset data between tests. Keep the `roles` table (seeded by migrations).
+            await conn.execute(
+                """
+                TRUNCATE TABLE
+                    project_history,
+                    field_counts,
+                    analysis_runs,
+                    batch_samples,
+                    sample_batches,
+                    sample_time_events,
+                    samples,
+                    reports,
+                    project_visits,
+                    project_technicians,
+                    projects,
+                    users,
+                    companies,
+                    user_roles
+                RESTART IDENTITY CASCADE;
+                """
+            )
+        await pool.close()
+
 
 @pytest.fixture
 async def client(db_pool) -> AsyncGenerator[AsyncClient, None]:
-    """Create a test client with a fresh database pool."""
     async def get_pool():
         yield db_pool
-    
+
     app.dependency_overrides[get_db] = get_pool
-    
-    # Create a test client that connects to the test server
     async with AsyncClient(
         transport=ASGITransport(app=app),
         base_url="http://test",
         follow_redirects=True,
-        timeout=30.0
-    ) as client:
-        yield client
-    
+        timeout=30.0,
+    ) as c:
+        yield c
+
     app.dependency_overrides.clear()
 
-@pytest.fixture
-async def test_user(db_pool) -> UserResponse:
-    """Create a test user."""
+
+async def _create_user_with_roles(
+    db_pool: Pool,
+    *,
+    email: str,
+    password: str,
+    first_name: str,
+    last_name: str,
+    role_names: list[str] | None = None,
+    company_id: int | None = None,
+) -> UserResponse:
     user_service = UserService(db_pool)
-    user_data = UserCreate(
-        email="test@example.com",
-        password="TestPass123!@#",
-        first_name="Test",
-        last_name="User",
-        is_active=True,
-        is_superuser=False
+    role_service = RoleService(db_pool)
+
+    user = await user_service.create_user(
+        UserCreate(
+            email=email,
+            password=password,
+            first_name=first_name,
+            last_name=last_name,
+            company_id=company_id,
+        )
     )
-    user = await user_service.create_user(user_data)
+
+    if role_names:
+        await role_service.assign_roles(user.id, role_names, user.id)
+        user = await user_service.get_user_by_id(user.id)
+        assert user is not None
+
     return user
 
-@pytest.fixture
-async def normal_user_token_headers(client: AsyncClient, test_user: UserResponse):
-    """Create a test user and return its token headers."""
-    login_data = {
-        "username": test_user.email,
-        "password": "TestPass123!@#"
-    }
-    response = await client.post("/api/v1/auth/login", data=login_data)
-    tokens = response.json()
-    return {"Authorization": f"Bearer {tokens['access_token']}"}
 
 @pytest.fixture
-async def superuser_token_headers(db_pool) -> dict:
-    """Create a superuser and return their auth headers."""
-    user_service = UserService(db_pool)
-    user_in = UserCreate(
-        email="superuser@example.com",
+async def normal_user(db_pool) -> UserResponse:
+    return await _create_user_with_roles(
+        db_pool,
+        email="user@example.com",
         password="TestPass123!@#",
-        first_name="Super",
+        first_name="Normal",
         last_name="User",
-        is_active=True,
-        is_superuser=True
+        role_names=None,
     )
-    user = await user_service.create_superuser(user_in)
-    access_token = create_access_token(
-        subject=user.email,
-        additional_claims={"is_superuser": True}
-    )
+
+
+@pytest.fixture
+async def normal_user_token_headers(normal_user: UserResponse) -> dict:
+    access_token = create_access_token(subject=normal_user.email)
     return {"Authorization": f"Bearer {access_token}"}
 
+
 @pytest.fixture
-async def admin_token_headers(db_pool):
-    """Create headers with an admin user token (has manage_users permission)."""
-    user_service = UserService(db_pool)
-    user_data = UserCreate(
+async def admin_user(db_pool) -> UserResponse:
+    return await _create_user_with_roles(
+        db_pool,
         email="admin@example.com",
         password="AdminPass123!@#",
         first_name="Admin",
         last_name="User",
-        is_active=True,
-        is_superuser=False
+        role_names=["admin"],
     )
-    user = await user_service.create_user(user_data)
-    async with db_pool.acquire() as conn:
-        # Get admin role id
-        admin_role = await conn.fetchrow("SELECT id, name FROM roles WHERE name = 'admin'")
-        if admin_role is None:
-            raise RuntimeError("Admin role not found in test database. Check test DB setup.")
-        # Assign admin role to user
-        await conn.execute(
-            """
-            INSERT INTO user_roles (user_id, role_id)
-            VALUES ($1, $2)
-            ON CONFLICT (user_id, role_id) DO NOTHING
-            """,
-            user.id, admin_role['id']
-        )
-        # Debug: check user_roles assignment
-        user_roles = await conn.fetch("SELECT * FROM user_roles WHERE user_id = $1", user.id)
-        print(f"[DEBUG] user_roles for admin user: {user_roles}")
-    access_token = create_access_token(
-        subject=user.email,
-        additional_claims={
-            "is_superuser": False,
-            "roles": [{
-                "id": admin_role['id'],
-                "name": admin_role['name']
-            }]
-        }
-    )
+
+
+@pytest.fixture
+async def admin_token_headers(admin_user: UserResponse) -> dict:
+    access_token = create_access_token(subject=admin_user.email)
     return {"Authorization": f"Bearer {access_token}"}
 
-@pytest.fixture
-async def technician_user(db_pool):
-    """Create a test technician user."""
-    user_service = UserService(db_pool)
-    role_service = RoleService(db_pool)
-    user_data = UserCreate(
-        email="technician@test.com",
-        password="TestPass123!",
-        first_name="Test",
-        last_name="Technician"
-    )
-    user = await user_service.create_user(user_data)
-    
-    # Assign technician role
-    await role_service.assign_roles(user.id, ["technician"], user.id)
-    
-    return user
 
 @pytest.fixture
-async def technician_token_headers(client: AsyncClient, technician_user: UserResponse):
-    """Get token headers for technician user."""
-    access_token = create_access_token(subject=technician_user.email)
-    return {"Authorization": f"Bearer {access_token}"}
-
-@pytest.fixture
-async def admin_user(db_pool):
-    """Create an admin user for testing."""
-    user_service = UserService(db_pool)
-    user_data = UserCreate(
-        email="admin@test.com",
-        password="TestPass123!",
-        first_name="Admin",
+async def manager_user(db_pool) -> UserResponse:
+    return await _create_user_with_roles(
+        db_pool,
+        email="manager@example.com",
+        password="ManagerPass123!@#",
+        first_name="Manager",
         last_name="User",
-        is_active=True,
-        is_superuser=False
+        role_names=["manager"],
     )
-    user = await user_service.create_user(user_data)
-    
-    # Assign admin role
-    role_service = RoleService(db_pool)
-    await role_service.assign_roles(user.id, ["admin"], user.id)
-    
-    return user
+
+
+@pytest.fixture
+async def manager_token_headers(manager_user: UserResponse) -> dict:
+    access_token = create_access_token(subject=manager_user.email)
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+@pytest.fixture
+async def supervisor_user(db_pool) -> UserResponse:
+    return await _create_user_with_roles(
+        db_pool,
+        email="supervisor@example.com",
+        password="SupervisorPass123!@#",
+        first_name="Supervisor",
+        last_name="User",
+        role_names=["supervisor"],
+    )
+
+
+@pytest.fixture
+async def supervisor_token_headers(supervisor_user: UserResponse) -> dict:
+    access_token = create_access_token(subject=supervisor_user.email)
+    return {"Authorization": f"Bearer {access_token}"}
+
+
+@pytest.fixture
+async def field_tech_user(db_pool) -> UserResponse:
+    return await _create_user_with_roles(
+        db_pool,
+        email="fieldtech@example.com",
+        password="FieldTechPass123!@#",
+        first_name="Field",
+        last_name="Tech",
+        role_names=["field_tech"],
+    )
+
+
+@pytest.fixture
+async def field_tech_token_headers(field_tech_user: UserResponse) -> dict:
+    access_token = create_access_token(subject=field_tech_user.email)
+    return {"Authorization": f"Bearer {access_token}"}

@@ -1,9 +1,12 @@
 from typing import List, Optional, Sequence, Union
+import re
 from fastapi import APIRouter, Depends, HTTPException, status, Body
 import asyncpg
+from pydantic import BaseModel, Field, EmailStr, field_validator
 
 from app.db.session import get_db
-from app.core.security import get_current_user
+from app.core.security import get_current_user, get_password_hash
+from app.core.deps import require_admin
 from app.core.validators import validate_password
 from app.schemas.user import UserResponse, UserCreate, UserUpdate, PasswordUpdate, EmployeeResponse
 from app.schemas.role import RoleInDB  # <- use your Role schema for stronger typing
@@ -186,21 +189,21 @@ async def get_user_by_id(
 @router.post("", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def create_user(
     user_in: UserCreate,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_admin),
     db: asyncpg.Pool = Depends(get_db),
 ):
-    """
-    Create a new user.
-    Enforces email uniqueness; delegate password rules to service/validators.
-    """
+    """Create a new user account (admin-only)."""
 
-# Validate password
+    # Validate password
     if not validate_password(user_in.password):
         raise HTTPException(
             status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-            detail="Password must be at least 8 characters long and contain uppercase, lowercase, numbers and special characters"
+            detail=(
+                "Password must be at least 8 characters long and contain uppercase, "
+                "lowercase, numbers and special characters"
+            ),
         )
-    
+
     service = UserService(db)
 
     existing = await service.get_user_by_email(user_in.email)
@@ -209,6 +212,114 @@ async def create_user(
 
     created = await service.create_user(user_in)
     return created
+
+
+class ClientAccountCreate(BaseModel):
+    company_id: int
+    email: EmailStr
+    first_name: str
+    last_name: str
+    phone: Optional[str] = None
+    code: str = Field(..., description="4-digit admin-selected code")
+
+    @field_validator("code")
+    @classmethod
+    def validate_code(cls, v: str):
+        if not re.fullmatch(r"\d{4}", v or ""):
+            raise ValueError("code must be exactly 4 digits")
+        return v
+
+
+class ClientAccountCreated(BaseModel):
+    user: UserResponse
+    default_password: str
+
+
+def _generate_default_client_password(company_name: str, code: str) -> str:
+    # Keep it derived from company name + 4-digit code, but ensure it satisfies
+    # the password guideline (uppercase/lowercase/number/special, min length).
+    base = re.sub(r"[^A-Za-z0-9]", "", (company_name or "company")).strip()
+    if len(base) < 2:
+        base = (base + "Company")
+    base = base.title()
+
+    pw = f"{base}!{code}"
+
+    if len(pw) < 8:
+        pw = pw + ("A" * (8 - len(pw)))
+
+    if not any(c.isupper() for c in pw):
+        pw += "A"
+    if not any(c.islower() for c in pw):
+        pw += "a"
+    if not any(c.isdigit() for c in pw):
+        pw += "0"
+    if not re.search(r"[^A-Za-z0-9]", pw):
+        pw += "!"
+
+    return pw
+
+
+@router.post("/client", response_model=ClientAccountCreated, status_code=status.HTTP_201_CREATED)
+async def create_client_account(
+    payload: ClientAccountCreate,
+    current_user: dict = Depends(require_admin),
+    db: asyncpg.Pool = Depends(get_db),
+):
+    """Create a client account for a company (admin-only).
+
+    Sets a default password derived from the company name + code and marks the
+    account as requiring a password change on first login.
+    """
+    # Ensure company exists
+    company = await db.fetchrow(query_manager.get_company, payload.company_id)
+    if not company:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Company not found")
+
+    # Ensure email unique
+    existing = await db.fetchrow(query_manager.get_user_by_email, str(payload.email))
+    if existing:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered")
+
+    default_password = _generate_default_client_password(company.get("name"), payload.code)
+    hashed_password = get_password_hash(default_password)
+
+    async with db.acquire() as conn:
+        async with conn.transaction():
+            user_id = await conn.fetchval(
+                query_manager.create_user_with_must_change_password,
+                payload.company_id,
+                str(payload.email).lower(),
+                hashed_password,
+                payload.first_name.strip().lower(),
+                payload.last_name.strip().lower(),
+                payload.phone,
+                True,   # is_active
+                False,  # is_superuser
+                True,   # must_change_password
+            )
+
+            # Assign client role
+            client_role = await conn.fetchrow("SELECT id FROM roles WHERE name = 'client'")
+            if not client_role:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Client role not found",
+                )
+            await conn.execute(query_manager.insert_user_role, user_id, client_role["id"])
+            await conn.execute(query_manager.recalc_user_highest_role_level, user_id)
+
+            created_user_row = await conn.fetchrow(query_manager.get_user_by_id, user_id)
+            if not created_user_row:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail="Failed to fetch created user",
+                )
+
+    return ClientAccountCreated(
+        user=UserResponse(**dict(created_user_row)),
+        default_password=default_password,
+    )
 
 
 @router.patch("/{user_id}", response_model=UserResponse)

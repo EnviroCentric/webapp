@@ -36,6 +36,7 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - BACKEND_PORT=${BACKEND_PORT}
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - REPORTS_STORAGE_DIR=/app/storage/reports
     depends_on:
       db:
         condition: service_healthy

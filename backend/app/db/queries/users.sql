@@ -10,6 +10,8 @@ SELECT
   is_active,
   is_superuser,
   highest_level,
+  must_change_password,
+  password_set_at,
   created_at,
   updated_at
 FROM users
@@ -33,6 +35,8 @@ SELECT
   u.is_active,
   u.is_superuser,
   u.highest_level,
+  u.must_change_password,
+  u.password_set_at,
   u.created_at,
   u.updated_at,
   COALESCE(
@@ -66,6 +70,8 @@ SELECT
   u.is_active,
   u.is_superuser,
   u.highest_level,
+  u.must_change_password,
+  u.password_set_at,
   u.created_at,
   u.updated_at,
   COALESCE(
@@ -100,6 +106,20 @@ INSERT INTO users (
 ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 RETURNING id;
 
+-- name: create_user_with_must_change_password
+INSERT INTO users (
+  company_id,
+  email,
+  hashed_password,
+  first_name,
+  last_name,
+  phone,
+  is_active,
+  is_superuser,
+  must_change_password
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+RETURNING id;
+
 -- name: update_user
 UPDATE users
 SET
@@ -114,7 +134,19 @@ SET
   updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
 RETURNING
-  id, company_id, email, first_name, last_name, phone, is_active, is_superuser, created_at, updated_at, highest_level;
+  id,
+  company_id,
+  email,
+  first_name,
+  last_name,
+  phone,
+  is_active,
+  is_superuser,
+  highest_level,
+  must_change_password,
+  password_set_at,
+  created_at,
+  updated_at;
 
 -- name: delete_user
 DELETE FROM users
@@ -152,6 +184,8 @@ SELECT
   is_active,
   is_superuser,
   highest_level,
+  must_change_password,
+  password_set_at,
   created_at,
   updated_at
 FROM users
@@ -161,6 +195,8 @@ WHERE id = $1;
 UPDATE users
 SET
   hashed_password = $2,
+  must_change_password = FALSE,
+  password_set_at = CURRENT_TIMESTAMP,
   updated_at = CURRENT_TIMESTAMP
 WHERE id = $1;
 
@@ -176,6 +212,8 @@ SELECT
   u.is_active,
   u.is_superuser,
   u.highest_level,
+  u.must_change_password,
+  u.password_set_at,
   u.created_at,
   u.updated_at,
   COALESCE(

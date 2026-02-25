@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, date
 from typing import Optional, Dict, Any, List
 from pydantic import BaseModel, Field
 from enum import Enum
@@ -48,6 +48,16 @@ class ReportResponse(BaseModel):
     client_visible: bool
     notes: Optional[str] = None
     generated_at: datetime
+
+    # Upload metadata (PDF upload workflow)
+    report_kind: Optional[str] = None
+    report_date: Optional[date] = None
+    formatted_address: Optional[str] = None
+    google_place_id: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    location_label: Optional[str] = None
+    worker_name: Optional[str] = None
     
     # Related data
     project_name: Optional[str] = None
@@ -167,6 +177,16 @@ class LegacyReportResponse(BaseModel):
     client_visible: bool
     notes: Optional[str] = None
     generated_at: datetime
+
+    # Upload metadata (PDF upload workflow)
+    report_kind: Optional[str] = None
+    report_date: Optional[date] = None
+    formatted_address: Optional[str] = None
+    google_place_id: Optional[str] = None
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+    location_label: Optional[str] = None
+    worker_name: Optional[str] = None
     
     # Related data
     project_name: Optional[str] = None

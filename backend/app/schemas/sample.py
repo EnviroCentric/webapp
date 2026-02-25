@@ -1,55 +1,49 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from typing import Optional
-from pydantic import BaseModel, Field, field_validator, ValidationInfo
+from pydantic import BaseModel, Field
+
 
 class SampleBase(BaseModel):
     description: str = Field(..., min_length=1, max_length=255)
     cassette_barcode: str = Field(..., min_length=1)
 
+
 class SampleCreate(SampleBase):
     project_id: int
     visit_id: int
-    address_id: Optional[int] = None  # For backward compatibility, usually None in new system
-    sample_type: str = 'regular'  # regular, lab_blank, field_blank
-    flow_rate: float = 12
-    volume_required: float = 1000
+    is_inside: Optional[bool] = None
+    flow_rate: int = Field(12, ge=0)
+    volume_required: int = Field(1000, ge=0)
+
 
 class SampleUpdate(BaseModel):
     description: Optional[str] = None
     is_inside: Optional[bool] = None
     flow_rate: Optional[int] = Field(None, ge=0)
     volume_required: Optional[int] = Field(None, ge=0)
-    start_time: Optional[datetime] = None
-    stop_time: Optional[datetime] = None
-    fields: Optional[int] = Field(None, ge=0)
-    fibers: Optional[int] = Field(None, ge=0)
+    sample_status: Optional[str] = None
+    reject_reason: Optional[str] = None
     cassette_barcode: Optional[str] = None
 
-    @field_validator('stop_time')
-    @classmethod
-    def validate_stop_time(cls, v: Optional[datetime], info: ValidationInfo) -> Optional[datetime]:
-        if v and 'start_time' in info.data and info.data['start_time']:
-            if v < info.data['start_time']:
-                raise ValueError('stop_time must be after start_time')
-        return v
 
 class SampleInDB(SampleBase):
     id: int
     project_id: int
     visit_id: Optional[int] = None
-    address_id: Optional[int] = None  # For backward compatibility
-    sample_type: str = 'regular'
-    description: Optional[str] = None
-    is_inside: Optional[bool] = None
+    collected_by: Optional[int] = None
+    collected_at: Optional[datetime] = None
+    sample_status: Optional[str] = None
+    reject_reason: Optional[str] = None
     flow_rate: Optional[int] = None
     volume_required: Optional[int] = None
-    start_time: Optional[datetime] = None
-    stop_time: Optional[datetime] = None
-    total_time_ran: Optional[timedelta] = None
-    fields: Optional[int] = None
-    fibers: Optional[int] = None
-    created_at: datetime
-    cassette_barcode: str
+    is_inside: Optional[bool] = None
+    created_at: Optional[datetime] = None
+    updated_at: Optional[datetime] = None
+
+    # Joined/derived fields
+    project_name: Optional[str] = None
+    visit_description: Optional[str] = None
+    collected_by_name: Optional[str] = None
 
     class Config:
-        from_attributes = True 
+        from_attributes = True

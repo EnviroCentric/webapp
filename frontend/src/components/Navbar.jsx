@@ -2,17 +2,18 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useRoles } from '../context/RolesContext';
 import logo from '../assets/logo.png';
 import Login from '../pages/Login';
-import Register from '../pages/Register';
 
 const navigation = [
   { name: "Home", href: "/", current: true },
   { name: "Services", href: "/services", current: false },
   { name: "Info", href: "/info", current: false },
   { name: "Dashboard", href: "/dashboard", current: false, requiresTechnician: true },
-  { name: "Projects", href: "/projects", current: false, requiresSupervisor: true }
+  { name: "Projects", href: "/projects", current: false, requiresSupervisor: true },
+  { name: "My Company", href: "/company/me", current: false, requiresClient: true },
+  { name: "Upload Report", href: "/reports/upload", current: false, requiresManager: true },
+  { name: "Admin", href: "/admin", current: false, requiresAdmin: true },
 ];
 
 const userMenuOptions = [
@@ -23,10 +24,8 @@ const userMenuOptions = [
 
 export default function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
-  const { roles } = useRoles();
   const { isDarkMode, toggleTheme } = useTheme();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [changed, setChanged] = useState(false);
   const location = useLocation();
@@ -40,9 +39,11 @@ export default function Navbar() {
   const lastScrollY = useRef(0);
 
   const isHomePage = location.pathname === '/';
-  const isSuperuser = user?.is_superuser || user?.roles?.some(role => role.name.toLowerCase() === 'admin');
-  const userRoleLevel = Math.max(...(user?.roles?.map(role => role.level) || [0]));
-  const isTechnicianOrHigher = userRoleLevel >= 50; // Technician level is 50
+  const userRoles = user?.roles || [];
+  const isSuperuser = user?.is_superuser || userRoles.some(role => (role.name || '').toLowerCase() === 'admin');
+  const userRoleLevel = Math.max(...(userRoles.map(role => role.level) || [0]));
+  const hasClientRole = userRoles.some(role => (role.name || '').toLowerCase() === 'client');
+  const isClient = !!(hasClientRole && user?.company_id && userRoleLevel < 100);
 
   const getUserInitials = () => {
     if (!user?.first_name && !user?.last_name) return null;
@@ -151,15 +152,6 @@ export default function Navbar() {
     toggleTheme();
   };
 
-  const handleSwitchToRegister = () => {
-    setIsLoginOpen(false);
-    setIsRegisterOpen(true);
-  };
-
-  const handleSwitchToLogin = () => {
-    setIsRegisterOpen(false);
-    setIsLoginOpen(true);
-  };
 
   const handleLogout = () => {
     logout();
@@ -196,6 +188,15 @@ export default function Navbar() {
                 <div className="ml-2 flex items-center space-x-4">
                   {navigation
                     .filter(item => {
+                      if (item.requiresClient) {
+                        return isClient;
+                      }
+                      if (item.requiresAdmin) {
+                        return userRoleLevel >= 100 || isSuperuser;
+                      }
+                      if (item.requiresManager) {
+                        return userRoleLevel >= 90;
+                      }
                       if (item.requiresSupervisor) {
                         return userRoleLevel >= 80; // Supervisor level is 80
                       }
@@ -320,15 +321,9 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <Login 
-        isOpen={isLoginOpen} 
+      <Login
+        isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
-        onSwitchToRegister={handleSwitchToRegister}
-      />
-      <Register 
-        isOpen={isRegisterOpen} 
-        onClose={() => setIsRegisterOpen(false)}
-        onSwitchToLogin={handleSwitchToLogin}
       />
     </>
   );

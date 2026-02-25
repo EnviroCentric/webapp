@@ -1,5 +1,5 @@
 from typing import Optional, List, Dict
-from datetime import date
+from datetime import date, datetime, timezone
 from asyncpg import Pool
 from app.db.queries.manager import query_manager
 from app.schemas.project import (
@@ -85,39 +85,43 @@ class ProjectService:
         return [dict(row) for row in rows]
 
     async def _create_blank_samples(self, conn, visit_id: int, project_id: int, technician_id: int):
-        """Create default lab blank and field blank samples for a visit."""
+        """Create default lab blank and field blank samples for a visit.
+
+        The DB schema does not currently have a `sample_type` column, so blanks are
+        identified by their description.
+        """
+        now = datetime.now(timezone.utc)
+
         # Create lab blank
-        await conn.execute(
+        await conn.fetchrow(
             query_manager.create_sample,
             project_id,      # project_id
-            None,           # address_id (NULL for visit-based system)
-            visit_id,       # visit_id
-            technician_id,  # collected_by
-            "NOW()",        # collected_at
-            "Lab Blank",   # description
-            None,           # is_inside
-            None,           # flow_rate (NULL for blanks)
-            None,           # volume_required (NULL for blanks)
-            "collected",   # sample_status
-            "lab_blank",   # sample_type
-            "PENDING_SCAN" # cassette_barcode (placeholder until scanned)
+            visit_id,        # visit_id
+            technician_id,   # collected_by
+            now,             # collected_at
+            "Lab Blank",    # description
+            None,            # is_inside
+            None,            # flow_rate (NULL for blanks)
+            None,            # volume_required (NULL for blanks)
+            "collected",    # sample_status
+            None,            # reject_reason
+            f"PENDING_SCAN_LAB_{visit_id}",
         )
-        
+
         # Create field blank
-        await conn.execute(
+        await conn.fetchrow(
             query_manager.create_sample,
             project_id,      # project_id
-            None,           # address_id (NULL for visit-based system)
-            visit_id,       # visit_id
-            technician_id,  # collected_by
-            "NOW()",        # collected_at
-            "Field Blank", # description
-            None,           # is_inside
-            None,           # flow_rate (NULL for blanks)
-            None,           # volume_required (NULL for blanks)
-            "collected",   # sample_status
-            "field_blank", # sample_type
-            "PENDING_SCAN" # cassette_barcode (placeholder until scanned)
+            visit_id,        # visit_id
+            technician_id,   # collected_by
+            now,             # collected_at
+            "Field Blank",  # description
+            None,            # is_inside
+            None,            # flow_rate (NULL for blanks)
+            None,            # volume_required (NULL for blanks)
+            "collected",    # sample_status
+            None,            # reject_reason
+            f"PENDING_SCAN_FIELD_{visit_id}",
         )
         
     async def create_blank_samples_for_visit(self, visit_id: int) -> bool:
@@ -125,63 +129,63 @@ class ProjectService:
         async with self.pool.acquire() as conn:
             # First check if blank samples already exist for this visit
             existing_blanks = await conn.fetch(
-                "SELECT id FROM samples WHERE visit_id = $1 AND sample_type IN ('lab_blank', 'field_blank')",
-                visit_id
+                "SELECT id FROM samples WHERE visit_id = $1 AND description IN ('Lab Blank', 'Field Blank')",
+                visit_id,
             )
-            
+
             if len(existing_blanks) >= 2:
                 return False  # Blank samples already exist
-            
+
             # Get visit details to get project_id and technician_id
             visit = await conn.fetchrow(
                 "SELECT project_id, technician_id FROM project_visits WHERE id = $1",
-                visit_id
+                visit_id,
             )
-            
+
             if not visit:
                 return False  # Visit not found
-            
+
+            now = datetime.now(timezone.utc)
+
             # Create missing blank samples
             existing_types = await conn.fetch(
-                "SELECT sample_type FROM samples WHERE visit_id = $1 AND sample_type IN ('lab_blank', 'field_blank')",
-                visit_id
+                "SELECT description FROM samples WHERE visit_id = $1 AND description IN ('Lab Blank', 'Field Blank')",
+                visit_id,
             )
-            existing_types_set = {row['sample_type'] for row in existing_types}
-            
-            if 'lab_blank' not in existing_types_set:
-                await conn.execute(
+            existing_types_set = {row['description'] for row in existing_types}
+
+            if 'Lab Blank' not in existing_types_set:
+                await conn.fetchrow(
                     query_manager.create_sample,
-                    visit['project_id'],  # project_id
-                    None,                # address_id (NULL for visit-based system)
-                    visit_id,           # visit_id
-                    visit['technician_id'], # collected_by
-                    "NOW()",            # collected_at
-                    "Lab Blank",       # description
-                    None,               # is_inside
-                    None,               # flow_rate (NULL for blanks)
-                    None,               # volume_required (NULL for blanks)
-                    "collected",       # sample_status
-                    "lab_blank",       # sample_type
-                    "PENDING_SCAN"     # cassette_barcode (placeholder until scanned)
+                    visit['project_id'],     # project_id
+                    visit_id,                # visit_id
+                    visit['technician_id'],  # collected_by
+                    now,                     # collected_at
+                    "Lab Blank",            # description
+                    None,                    # is_inside
+                    None,                    # flow_rate (NULL for blanks)
+                    None,                    # volume_required (NULL for blanks)
+                    "collected",            # sample_status
+                    None,                    # reject_reason
+                    f"PENDING_SCAN_LAB_{visit_id}",
                 )
-            
-            if 'field_blank' not in existing_types_set:
-                await conn.execute(
+
+            if 'Field Blank' not in existing_types_set:
+                await conn.fetchrow(
                     query_manager.create_sample,
-                    visit['project_id'],  # project_id
-                    None,                # address_id (NULL for visit-based system)
-                    visit_id,           # visit_id
-                    visit['technician_id'], # collected_by
-                    "NOW()",            # collected_at
-                    "Field Blank",     # description
-                    None,               # is_inside
-                    None,               # flow_rate (NULL for blanks)
-                    None,               # volume_required (NULL for blanks)
-                    "collected",       # sample_status
-                    "field_blank",     # sample_type
-                    "PENDING_SCAN"     # cassette_barcode (placeholder until scanned)
+                    visit['project_id'],     # project_id
+                    visit_id,                # visit_id
+                    visit['technician_id'],  # collected_by
+                    now,                     # collected_at
+                    "Field Blank",          # description
+                    None,                    # is_inside
+                    None,                    # flow_rate (NULL for blanks)
+                    None,                    # volume_required (NULL for blanks)
+                    "collected",            # sample_status
+                    None,                    # reject_reason
+                    f"PENDING_SCAN_FIELD_{visit_id}",
                 )
-            
+
             return True
 
     # Address management is now handled through project visits

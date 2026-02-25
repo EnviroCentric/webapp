@@ -12,7 +12,6 @@ import ProfileEdit from './pages/ProfileEdit';
 import ProfilePassword from './pages/ProfilePassword';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import UserManagement from './pages/UserManagement';
 import Projects from './pages/Projects';
 import ProjectDashboard from './pages/ProjectDashboard';
@@ -20,6 +19,8 @@ import SampleCollection from './pages/SampleCollection';
 import CompanyManagement from './pages/CompanyManagement';
 import CompanyDetails from './pages/CompanyDetails';
 import CompanyDashboard from './pages/CompanyDashboard';
+import ReportUpload from './pages/ReportUpload';
+import AdminPortal from './pages/AdminPortal';
 
 import { RolesProvider } from './context/RolesContext';
 import { PermissionsProvider } from './context/PermissionsContext';
@@ -94,7 +95,7 @@ function App() {
                     }
                   />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
+                  <Route path="/register" element={<Login />} />
                   <Route
                     path="/user-management"
                     element={
@@ -124,6 +125,22 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <CompanyDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports/upload"
+                    element={
+                      <ProtectedRoute>
+                        <ReportUpload />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute>
+                        <AdminPortal />
                       </ProtectedRoute>
                     }
                   />

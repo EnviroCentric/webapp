@@ -82,6 +82,8 @@ class UserResponse(UserBase):
     roles: List[RoleResponse] = Field(default_factory=list)
     is_superuser: bool = False
     highest_level: int = 0
+    must_change_password: bool = False
+    password_set_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -143,5 +145,7 @@ class UserInDB(BaseModel):
     is_active: bool
     is_superuser: bool
     highest_level: int = 0
+    must_change_password: bool = False
+    password_set_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

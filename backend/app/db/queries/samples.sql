@@ -1,68 +1,60 @@
+-- Sample management queries
+-- NOTE: As of migration `0007_restructure_visits_with_addresses.sql`, the `addresses`
+-- table and `samples.address_id` are removed. Samples are linked to a project visit.
+
 -- name: create_sample
 INSERT INTO samples (
-    project_id, 
-    address_id, 
-    visit_id, 
-    collected_by, 
-    collected_at, 
-    description, 
-    is_inside, 
-    flow_rate, 
-    volume_required, 
-    sample_status, 
-    sample_type,
+    project_id,
+    visit_id,
+    collected_by,
+    collected_at,
+    description,
+    is_inside,
+    flow_rate,
+    volume_required,
+    sample_status,
+    reject_reason,
     cassette_barcode
-) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) 
+) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
 RETURNING *;
 
 -- name: get_sample
-SELECT 
+SELECT
     s.*,
     p.name as project_name,
-    a.name as address_name,
+    pv.description as visit_description,
     u.first_name || ' ' || u.last_name as collected_by_name
 FROM samples s
 LEFT JOIN projects p ON s.project_id = p.id
-LEFT JOIN addresses a ON s.address_id = a.id
+LEFT JOIN project_visits pv ON s.visit_id = pv.id
 LEFT JOIN users u ON s.collected_by = u.id
 WHERE s.id = $1;
 
 -- name: get_samples_by_project
-SELECT 
+SELECT
     s.*,
-    a.name as address_name,
-    u.first_name || ' ' || u.last_name as collected_by_name
-FROM samples s
-LEFT JOIN addresses a ON s.address_id = a.id
-LEFT JOIN users u ON s.collected_by = u.id
-WHERE s.project_id = $1 
-ORDER BY s.collected_at DESC;
-
--- name: get_samples_by_visit
-SELECT 
-    s.*,
-    pv.description as address_name,
+    pv.description as visit_description,
     u.first_name || ' ' || u.last_name as collected_by_name
 FROM samples s
 LEFT JOIN project_visits pv ON s.visit_id = pv.id
 LEFT JOIN users u ON s.collected_by = u.id
-WHERE s.visit_id = $1 
+WHERE s.project_id = $1
 ORDER BY s.collected_at DESC;
 
--- name: get_samples_by_address
-SELECT 
+-- name: get_samples_by_visit
+SELECT
     s.*,
-    p.name as project_name,
+    pv.description as visit_description,
     u.first_name || ' ' || u.last_name as collected_by_name
 FROM samples s
-LEFT JOIN projects p ON s.project_id = p.id
+LEFT JOIN project_visits pv ON s.visit_id = pv.id
 LEFT JOIN users u ON s.collected_by = u.id
-WHERE s.address_id = $1 
+WHERE s.visit_id = $1
 ORDER BY s.collected_at DESC;
 
 -- name: update_sample
 UPDATE samples
-SET 
+SET
     description = COALESCE($2, description),
     is_inside = COALESCE($3, is_inside),
     flow_rate = COALESCE($4, flow_rate),
@@ -78,33 +70,33 @@ RETURNING *;
 DELETE FROM samples WHERE id = $1;
 
 -- name: list_samples
-SELECT 
+SELECT
     s.*,
     p.name as project_name,
-    a.name as address_name,
+    pv.description as visit_description,
     u.first_name || ' ' || u.last_name as collected_by_name
 FROM samples s
 LEFT JOIN projects p ON s.project_id = p.id
-LEFT JOIN addresses a ON s.address_id = a.id
+LEFT JOIN project_visits pv ON s.visit_id = pv.id
 LEFT JOIN users u ON s.collected_by = u.id
 ORDER BY s.collected_at DESC;
 
 -- name: get_samples_by_status
-SELECT 
+SELECT
     s.*,
     p.name as project_name,
-    a.name as address_name,
+    pv.description as visit_description,
     u.first_name || ' ' || u.last_name as collected_by_name
 FROM samples s
 LEFT JOIN projects p ON s.project_id = p.id
-LEFT JOIN addresses a ON s.address_id = a.id
+LEFT JOIN project_visits pv ON s.visit_id = pv.id
 LEFT JOIN users u ON s.collected_by = u.id
 WHERE s.sample_status = $1
 ORDER BY s.collected_at DESC;
 
 -- name: update_sample_status
-UPDATE samples 
-SET 
+UPDATE samples
+SET
     sample_status = $2,
     updated_at = CURRENT_TIMESTAMP
 WHERE id = $1
