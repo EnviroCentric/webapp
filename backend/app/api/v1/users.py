@@ -371,7 +371,7 @@ async def assign_roles(
       • superusers OR highest role level >= MANAGE_USER_LVL (80)
 
     Constraints (non-superusers):
-      • You cannot assign any role whose level is >= your highest role level.
+      • You cannot assign any role whose level is > your highest role level.
     """
     cu = UserResponse(**current_user)
 
@@ -396,7 +396,7 @@ async def assign_roles(
         role = await db.fetchrow(query_manager.get_role_by_id, rid)
         if not role:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=f"Role with ID {rid} not found")
-        if not _is_superuser(cu) and role["level"] >= current_user_highest_level:
+        if not _is_superuser(cu) and role["level"] > current_user_highest_level:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient permissions to assign this role",
@@ -409,5 +409,8 @@ async def assign_roles(
             await conn.execute(query_manager.delete_user_roles, user_id)
             for role in role_rows:
                 await conn.execute(query_manager.insert_user_role, user_id, role["id"])
+
+            # Keep denormalized users.highest_level in sync
+            await conn.execute(query_manager.recalc_user_highest_role_level, user_id)
 
     return {"message": "Roles updated"}

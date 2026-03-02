@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import SimpleGooglePlaces from './SimpleGooglePlaces';
 import { GoogleMapsLoader } from './GooglePlacesAutocomplete';
 
@@ -12,40 +12,85 @@ const AddressInput = ({
   required = false, 
   disabled = false,
   showManualEntry = false,
+  allowManualEntry = true,
   className = "",
   showLocationName = true // New prop to control location name visibility
 }) => {
-  const [useGooglePlaces, setUseGooglePlaces] = useState(true);
   const [manualMode, setManualMode] = useState(showManualEntry);
-  const [addressData, setAddressData] = useState({
-    name: '',
-    address_line1: '',
-    address_line2: '',
-    city: '',
-    state: '',
-    zip: '',
-    formatted_address: '',
-    google_place_id: '',
-    latitude: null,
-    longitude: null,
-    ...value
-  });
 
-  // Get Google Maps API key from environment
-  const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_PLACES_API_KEY || '';
+  // Treat the component as controlled via `value`, but maintain internal state for
+  // input interactions.
+  const normalizedValue = useMemo(() => ({
+    name: value?.name ?? '',
+    address_line1: value?.address_line1 ?? '',
+    address_line2: value?.address_line2 ?? '',
+    city: value?.city ?? '',
+    state: value?.state ?? '',
+    zip: value?.zip ?? '',
+    formatted_address: value?.formatted_address ?? '',
+    google_place_id: value?.google_place_id ?? '',
+    latitude: value?.latitude ?? null,
+    longitude: value?.longitude ?? null,
+  }), [
+    value?.name,
+    value?.address_line1,
+    value?.address_line2,
+    value?.city,
+    value?.state,
+    value?.zip,
+    value?.formatted_address,
+    value?.google_place_id,
+    value?.latitude,
+    value?.longitude,
+  ]);
+
+  const [addressData, setAddressData] = useState(normalizedValue);
+
+  // Keep the onChange callback stable to avoid dependency loops.
+  const onChangeRef = useRef(onChange);
+  useEffect(() => {
+    onChangeRef.current = onChange;
+  }, [onChange]);
+
+  // Sync internal state from props (so resets like value={} actually clear the UI).
+  useEffect(() => {
+    setAddressData((prev) => {
+      const same = (
+        prev.name === normalizedValue.name &&
+        prev.address_line1 === normalizedValue.address_line1 &&
+        prev.address_line2 === normalizedValue.address_line2 &&
+        prev.city === normalizedValue.city &&
+        prev.state === normalizedValue.state &&
+        prev.zip === normalizedValue.zip &&
+        prev.formatted_address === normalizedValue.formatted_address &&
+        prev.google_place_id === normalizedValue.google_place_id &&
+        prev.latitude === normalizedValue.latitude &&
+        prev.longitude === normalizedValue.longitude
+      );
+      return same ? prev : normalizedValue;
+    });
+  }, [normalizedValue]);
+
+  // Get Google Maps API key from environment.
+  // Note: Vite only exposes variables prefixed with VITE_ at build time.
+  const GOOGLE_MAPS_API_KEY =
+    import.meta.env.VITE_GOOGLE_PLACES_API_KEY ||
+    import.meta.env.VITE_GOOGLE_MAPS_API_KEY ||
+    '';
 
   useEffect(() => {
-    if (onChange) {
-      // Filter out 'name' field when showLocationName is false to prevent 
-      // overwriting company/project names with location names
-      if (!showLocationName) {
-        const { name, ...addressFieldsOnly } = addressData;
-        onChange(addressFieldsOnly);
-      } else {
-        onChange(addressData);
-      }
+    const fn = onChangeRef.current;
+    if (!fn) return;
+
+    // Filter out 'name' field when showLocationName is false to prevent
+    // overwriting company/project names with location names.
+    if (!showLocationName) {
+      const { name, ...addressFieldsOnly } = addressData;
+      fn(addressFieldsOnly);
+    } else {
+      fn(addressData);
     }
-  }, [addressData, showLocationName, onChange]);
+  }, [addressData, showLocationName]);
 
   const handlePlaceSelect = (placeData) => {
     setAddressData(prev => ({
@@ -71,6 +116,7 @@ const AddressInput = ({
   };
 
   const toggleMode = () => {
+    if (!allowManualEntry) return;
     setManualMode(!manualMode);
   };
 
@@ -81,7 +127,7 @@ const AddressInput = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Address Information
           </label>
-          {GOOGLE_MAPS_API_KEY && (
+          {GOOGLE_MAPS_API_KEY && allowManualEntry && (
             <button
               type="button"
               onClick={toggleMode}
@@ -198,13 +244,15 @@ const AddressInput = ({
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
             Address
           </label>
-          <button
-            type="button"
-            onClick={toggleMode}
-            className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400"
-          >
-            Manual Entry
-          </button>
+          {allowManualEntry && (
+            <button
+              type="button"
+              onClick={toggleMode}
+              className="text-sm text-blue-600 hover:text-blue-800 dark:text-blue-400"
+            >
+              Manual Entry
+            </button>
+          )}
         </div>
         
         {/* Name/Alias - only show if showLocationName is true */}

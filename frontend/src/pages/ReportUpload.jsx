@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
@@ -11,8 +11,10 @@ const REPORT_KINDS = [
 ];
 
 export default function ReportUpload() {
-  const { user } = useAuth();
+  const { user, refreshUserData } = useAuth();
   const navigate = useNavigate();
+
+  const refreshedOnce = useRef(false);
 
   const [companies, setCompanies] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -34,31 +36,53 @@ export default function ReportUpload() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
-  const roleLevel = Math.max(...((user?.roles || []).map(r => r.level || 0)), 0);
-  const isManagerPlus = !!(user?.is_superuser || roleLevel >= 90);
 
   const selectedProject = useMemo(() => projects.find(p => String(p.id) === String(selectedProjectId)), [projects, selectedProjectId]);
 
   useEffect(() => {
-    const run = async () => {
-      if (!isManagerPlus) {
-        navigate('/dashboard', { replace: true });
-        return;
-      }
+    let cancelled = false;
 
+    const run = async () => {
       try {
+        // Ensure we aren't using stale cached user data when entering this page.
+        let u = user;
+        if (!refreshedOnce.current) {
+          refreshedOnce.current = true;
+          try {
+            const updated = await refreshUserData?.();
+            if (updated) u = updated;
+          } catch (err) {
+            // Non-fatal: fall back to existing user data.
+            console.warn('ReportUpload: refreshUserData failed:', err);
+          }
+        }
+
+        const lvl = Math.max(
+          Number(u?.highest_level ?? 0),
+          Math.max(...((u?.roles || []).map(r => r.level || 0)), 0),
+        );
+        const allowed = !!(u?.is_superuser || lvl >= 90);
+        if (!allowed) {
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+
         const resp = await api.get('/api/v1/companies/');
-        setCompanies(resp.data || []);
+        if (!cancelled) setCompanies(resp.data || []);
       } catch (err) {
         console.error('Failed to fetch companies:', err);
-        setError('Failed to load companies');
+        if (!cancelled) setError('Failed to load companies');
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
     run();
-  }, [isManagerPlus, navigate]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [navigate, refreshUserData, user]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -324,6 +348,7 @@ export default function ReportUpload() {
                 onChange={setAddress}
                 required
                 showLocationName={false}
+                allowManualEntry={false}
               />
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Pick the address from Google Places (manual entry will not work for uploads).
@@ -337,7 +362,7 @@ export default function ReportUpload() {
                 value={locationLabel}
                 onChange={(e) => setLocationLabel(e.target.value)}
                 list="report-location-options"
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                className="mt-1 block w-full px-3 py-2 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 placeholder="e.g. Boiler Room"
               />
               <datalist id="report-location-options">
@@ -366,7 +391,7 @@ export default function ReportUpload() {
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={3}
-                className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                className="mt-1 block w-full px-3 py-2 rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               />
             </div>
 

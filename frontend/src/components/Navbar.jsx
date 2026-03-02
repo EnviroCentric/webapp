@@ -1,19 +1,19 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import logo from '../assets/logo.png';
 import Login from '../pages/Login';
 
 const navigation = [
-  { name: "Home", href: "/", current: true },
-  { name: "Services", href: "/services", current: false },
-  { name: "Info", href: "/info", current: false },
-  { name: "Dashboard", href: "/dashboard", current: false, requiresTechnician: true },
-  { name: "Projects", href: "/projects", current: false, requiresSupervisor: true },
-  { name: "My Company", href: "/company/me", current: false, requiresClient: true },
-  { name: "Upload Report", href: "/reports/upload", current: false, requiresManager: true },
-  { name: "Admin", href: "/admin", current: false, requiresAdmin: true },
+  { name: "Home", href: "/" },
+  { name: "Services", href: "/services" },
+  { name: "Info", href: "/info" },
+  { name: "Dashboard", href: "/dashboard", requiresTechnician: true },
+  { name: "Projects", href: "/projects", requiresSupervisor: true },
+  { name: "My Company", href: "/company/me", requiresClient: true },
+  { name: "Upload Report", href: "/reports/upload", requiresManager: true },
+  { name: "Admin", href: "/admin", requiresAdmin: true },
 ];
 
 const userMenuOptions = [
@@ -27,7 +27,6 @@ export default function Navbar() {
   const { isDarkMode, toggleTheme } = useTheme();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [changed, setChanged] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const profileMenuRef = useRef(null);
@@ -41,7 +40,7 @@ export default function Navbar() {
   const isHomePage = location.pathname === '/';
   const userRoles = user?.roles || [];
   const isSuperuser = user?.is_superuser || userRoles.some(role => (role.name || '').toLowerCase() === 'admin');
-  const userRoleLevel = Math.max(...(userRoles.map(role => role.level) || [0]));
+  const userRoleLevel = Math.max(0, ...(userRoles.map(role => role.level || 0)));
   const hasClientRole = userRoles.some(role => (role.name || '').toLowerCase() === 'client');
   const isClient = !!(hasClientRole && user?.company_id && userRoleLevel < 100);
 
@@ -53,20 +52,6 @@ export default function Navbar() {
     return `${firstInitial}${lastInitial}`;
   };
 
-  const onNav = () => {
-    for (let nav of navigation) {
-      if (nav.href === location.pathname) {
-        nav.current = true;
-      } else {
-        nav.current = false;
-      }
-    }
-    setChanged(!changed);
-  };
-
-  useEffect(() => {
-    onNav();
-  }, [location.pathname]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -206,17 +191,19 @@ export default function Navbar() {
                       return true;
                     })
                     .map((item) => (
-                      <Link
+                      <NavLink
                         key={item.name}
                         to={item.href}
-                        className={`${
-                          item.current
-                            ? 'bg-gray-900 text-white'
-                            : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                        } px-3 py-2 rounded-md text-sm font-medium`}
+                        className={({ isActive }) => (
+                          `${
+                            isActive
+                              ? 'bg-gray-900 text-white'
+                              : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                          } px-3 py-2 rounded-md text-sm font-medium`
+                        )}
                       >
                         {item.name}
-                      </Link>
+                      </NavLink>
                     ))}
                 </div>
               </div>
