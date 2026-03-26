@@ -5,9 +5,9 @@ import Modal from '../components/Modal';
 
 export default function Login({ isOpen, onClose, successMessage }) {
   const [formData, setFormData] = useState(() => {
-    const savedData = localStorage.getItem('loginFormData');
-    return savedData ? JSON.parse(savedData) : {
-      email: '',
+    const savedEmail = localStorage.getItem('loginEmail');
+    return {
+      email: savedEmail || '',
       password: '',
     };
   });
@@ -22,13 +22,34 @@ export default function Login({ isOpen, onClose, successMessage }) {
   const isModal = typeof isOpen === 'boolean';
   const from = location.state?.from?.pathname;
 
+  // Remove the legacy form cache so previously stored passwords do not linger.
+  useEffect(() => {
+    const savedData = localStorage.getItem('loginFormData');
+    if (!savedData) return;
+
+    try {
+      const parsed = JSON.parse(savedData);
+      if (parsed?.email) {
+        localStorage.setItem('loginEmail', parsed.email);
+        setFormData(prev => ({
+          ...prev,
+          email: prev.email || parsed.email,
+        }));
+      }
+    } catch {
+      // Ignore malformed legacy cache entries and clear them out.
+    }
+
+    localStorage.removeItem('loginFormData');
+  }, []);
+
   // Clear form data when modal is closed
   useEffect(() => {
     if (!isOpen) {
-      setFormData({
-        email: '',
+      setFormData(prev => ({
+        email: prev.email,
         password: '',
-      });
+      }));
       setError('');
       setIsEmailUnregistered(false);
       setShowPassword(false);
@@ -37,9 +58,9 @@ export default function Login({ isOpen, onClose, successMessage }) {
 
   useEffect(() => {
     if (isOpen) {
-      localStorage.setItem('loginFormData', JSON.stringify(formData));
+      localStorage.setItem('loginEmail', formData.email);
     }
-  }, [formData, isOpen]);
+  }, [formData.email, isOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -61,7 +82,7 @@ export default function Login({ isOpen, onClose, successMessage }) {
 
     try {
       const result = await login(formData.email, formData.password);
-      localStorage.removeItem('loginFormData');
+      localStorage.setItem('loginEmail', formData.email);
 
       if (onClose) {
         onClose();

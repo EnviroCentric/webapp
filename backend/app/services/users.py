@@ -1,6 +1,6 @@
-from typing import Optional, List, Dict
+from typing import Optional, List, Dict, Any
 from asyncpg import Pool
-from app.schemas.user import UserCreate, UserUpdate, UserResponse, UserInDB
+from app.schemas.user import UserCreate, UserUpdate, SelfUserUpdate, UserResponse, UserInDB
 from app.core.security import get_password_hash, verify_password
 from app.db.queries.manager import query_manager
 import asyncpg
@@ -56,10 +56,13 @@ class UserService:
             )
             return UserInDB(**dict(row)) if row else None
 
-    async def update_user(self, user_id: int, user_in: UserUpdate) -> Optional[UserResponse]:
+    async def update_user(self, user_id: int, user_in: UserUpdate | SelfUserUpdate | Dict[str, Any]) -> Optional[UserResponse]:
         """Update a user's information."""
-        # Convert UserUpdate to dict and filter out None values
-        update_data = user_in.model_dump(exclude_unset=True)
+        # Convert the incoming model to a dict and keep only explicitly supplied fields.
+        if isinstance(user_in, dict):
+            update_data = dict(user_in)
+        else:
+            update_data = user_in.model_dump(exclude_unset=True)
         
         # Handle password hashing if it's being updated
         if 'password' in update_data:

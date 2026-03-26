@@ -29,6 +29,8 @@ INSERT INTO reports (
     longitude,
     location_label,
     worker_name,
+    technician_user_id,
+    technician_name,
     report_file_path,
     generated_by,
     report_data,
@@ -36,7 +38,7 @@ INSERT INTO reports (
     client_visible,
     notes
 ) VALUES (
-    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
+    $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18
 )
 RETURNING *;
 
@@ -45,11 +47,13 @@ SELECT
     r.*,
     p.name as project_name,
     c.name as company_name,
-    u.first_name || ' ' || u.last_name as generated_by_name
+    u.first_name || ' ' || u.last_name as generated_by_name,
+    tu.first_name || ' ' || tu.last_name as technician_user_name
 FROM reports r
 LEFT JOIN projects p ON r.project_id = p.id
 LEFT JOIN companies c ON p.company_id = c.id
 LEFT JOIN users u ON r.generated_by = u.id
+LEFT JOIN users tu ON r.technician_user_id = tu.id
 WHERE r.id = $1;
 
 -- name: update_report
@@ -78,9 +82,11 @@ DELETE FROM reports WHERE id = $1;
 -- name: get_project_reports
 SELECT 
     r.*,
-    u.first_name || ' ' || u.last_name as generated_by_name
+    u.first_name || ' ' || u.last_name as generated_by_name,
+    tu.first_name || ' ' || tu.last_name as technician_user_name
 FROM reports r
 LEFT JOIN users u ON r.generated_by = u.id
+LEFT JOIN users tu ON r.technician_user_id = tu.id
 WHERE r.project_id = $1
 ORDER BY r.generated_at DESC;
 
@@ -89,10 +95,12 @@ ORDER BY r.generated_at DESC;
 SELECT 
     r.*,
     p.name as project_name,
-    u.first_name || ' ' || u.last_name as generated_by_name
+    u.first_name || ' ' || u.last_name as generated_by_name,
+    tu.first_name || ' ' || tu.last_name as technician_user_name
 FROM reports r
 JOIN projects p ON r.project_id = p.id
 LEFT JOIN users u ON r.generated_by = u.id
+LEFT JOIN users tu ON r.technician_user_id = tu.id
 WHERE p.company_id = $1
 ORDER BY COALESCE(r.report_date, r.generated_at::date) DESC, r.generated_at DESC;
 
@@ -117,11 +125,13 @@ SELECT
     r.*,
     p.name as project_name,
     c.name as company_name,
-    u.first_name || ' ' || u.last_name as generated_by_name
+    u.first_name || ' ' || u.last_name as generated_by_name,
+    tu.first_name || ' ' || tu.last_name as technician_user_name
 FROM reports r
 LEFT JOIN projects p ON r.project_id = p.id
 LEFT JOIN companies c ON p.company_id = c.id
 LEFT JOIN users u ON r.generated_by = u.id
+LEFT JOIN users tu ON r.technician_user_id = tu.id
 ORDER BY r.generated_at DESC;
 
 -- name: get_pending_reports
@@ -130,11 +140,13 @@ SELECT
     r.*,
     p.name as project_name,
     c.name as company_name,
-    u.first_name || ' ' || u.last_name as generated_by_name
+    u.first_name || ' ' || u.last_name as generated_by_name,
+    tu.first_name || ' ' || tu.last_name as technician_user_name
 FROM reports r
 LEFT JOIN projects p ON r.project_id = p.id
 LEFT JOIN companies c ON p.company_id = c.id
 LEFT JOIN users u ON r.generated_by = u.id
+LEFT JOIN users tu ON r.technician_user_id = tu.id
 WHERE r.is_final = FALSE
 ORDER BY r.generated_at ASC;
 

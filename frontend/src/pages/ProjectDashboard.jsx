@@ -129,7 +129,7 @@ export default function ProjectDashboard() {
         console.log('Analyze samples functionality to be implemented');
         break;
       case 'reports':
-        console.log('View reports functionality to be implemented');
+        navigate(`/projects/${projectId}/reports`);
         break;
       default:
         break;

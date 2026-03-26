@@ -94,6 +94,39 @@ async def test_user_cannot_update_other_user(client: AsyncClient, admin_token_he
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
 
+async def test_user_cannot_update_protected_fields_on_self(client: AsyncClient, normal_user_token_headers: dict):
+    resp = await client.put(
+        "/api/v1/users/me",
+        json={"is_superuser": True},
+        headers=normal_user_token_headers,
+    )
+    assert resp.status_code == status.HTTP_422_UNPROCESSABLE_ENTITY
+
+
+async def test_user_cannot_fetch_other_user_by_id(
+    client: AsyncClient,
+    admin_token_headers: dict,
+    normal_user_token_headers: dict,
+):
+    created = await client.post(
+        "/api/v1/users",
+        json={
+            "email": "other@example.com",
+            "password": "TestPass123!@#",
+            "first_name": "Other",
+            "last_name": "User",
+        },
+        headers=admin_token_headers,
+    )
+    assert created.status_code == status.HTTP_201_CREATED
+
+    resp = await client.get(
+        f"/api/v1/users/{created.json()['id']}",
+        headers=normal_user_token_headers,
+    )
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
 async def test_update_me_email_already_taken(client: AsyncClient, admin_token_headers: dict, normal_user_token_headers: dict):
     # Create another user via admin
     created = await client.post(

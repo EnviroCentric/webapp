@@ -15,11 +15,14 @@ import Login from './pages/Login';
 import UserManagement from './pages/UserManagement';
 import Projects from './pages/Projects';
 import ProjectDashboard from './pages/ProjectDashboard';
+import ProjectReports from './pages/ProjectReports';
 import SampleCollection from './pages/SampleCollection';
 import CompanyManagement from './pages/CompanyManagement';
 import CompanyDetails from './pages/CompanyDetails';
+import CompanyReports from './pages/CompanyReports';
 import CompanyDashboard from './pages/CompanyDashboard';
 import ReportUpload from './pages/ReportUpload';
+import ReportDetails from './pages/ReportDetails';
 import AdminPortal from './pages/AdminPortal';
 
 import { RolesProvider } from './context/RolesContext';
@@ -59,6 +62,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <ProjectDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/projects/:projectId/reports"
+                    element={
+                      <ProtectedRoute>
+                        <ProjectReports />
                       </ProtectedRoute>
                     }
                   />
@@ -121,6 +132,14 @@ function App() {
                     }
                   />
                   <Route
+                    path="/companies/:companyId/reports"
+                    element={
+                      <ProtectedRoute>
+                        <CompanyReports />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/company/me"
                     element={
                       <ProtectedRoute>
@@ -133,6 +152,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <ReportUpload />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports/:reportId"
+                    element={
+                      <ProtectedRoute>
+                        <ReportDetails />
                       </ProtectedRoute>
                     }
                   />

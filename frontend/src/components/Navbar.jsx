@@ -11,6 +11,7 @@ const navigation = [
   { name: "Info", href: "/info" },
   { name: "Dashboard", href: "/dashboard", requiresTechnician: true },
   { name: "Projects", href: "/projects", requiresSupervisor: true },
+  { name: "Companies", href: "/companies", requiresSupervisor: true },
   { name: "My Company", href: "/company/me", requiresClient: true },
   { name: "Upload Report", href: "/reports/upload", requiresManager: true },
   { name: "Admin", href: "/admin", requiresAdmin: true },

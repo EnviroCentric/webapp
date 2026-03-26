@@ -8,7 +8,7 @@ from app.db.session import get_db
 from app.core.security import get_current_user, get_password_hash
 from app.core.deps import require_admin
 from app.core.validators import validate_password
-from app.schemas.user import UserResponse, UserCreate, UserUpdate, PasswordUpdate, EmployeeResponse
+from app.schemas.user import UserResponse, UserCreate, UserUpdate, SelfUserUpdate, PasswordUpdate, EmployeeResponse
 from app.schemas.role import RoleInDB  # <- use your Role schema for stronger typing
 from app.services.users import UserService
 from app.db.queries.manager import query_manager
@@ -110,7 +110,7 @@ async def get_me(current_user: dict = Depends(get_current_user)):
 
 @router.put("/me", response_model=UserResponse)
 async def update_me(
-    user_in: UserUpdate,
+    user_in: SelfUserUpdate,
     current_user: dict = Depends(get_current_user),
     db: asyncpg.Pool = Depends(get_db),
 ):
@@ -178,8 +178,17 @@ async def get_user_by_id(
     db: asyncpg.Pool = Depends(get_db),
 ):
     """
-    Fetch a user by id. Requires authentication.
+    Fetch a user by id.
+    Allowed for the user themselves, or users with manager-level access and above.
     """
+    cu = UserResponse(**current_user)
+    can_view = cu.id == user_id or _is_superuser(cu) or _highest_role_level(cu) >= MANAGE_USER_LVL
+    if not can_view:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Insufficient permissions to view this user",
+        )
+
     user = await UserService(db).get_user_by_id(user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
@@ -338,11 +347,24 @@ async def patch_user(
       • the user themselves (user_id == current_user.id)
     """
     cu = UserResponse(**current_user)
-    can_update = _is_superuser(cu) or _highest_role_level(cu) >= MANAGE_USER_LVL or (cu.id == user_id)
+    is_elevated = _is_superuser(cu) or _highest_role_level(cu) >= MANAGE_USER_LVL
+    is_self = cu.id == user_id
+    can_update = is_elevated or is_self
     if not can_update:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Insufficient permissions to update user")
 
     service = UserService(db)
+    update_data = user_in.model_dump(exclude_unset=True)
+
+    if is_self and not is_elevated:
+        forbidden_fields = {"is_active", "is_superuser", "company_id"} & set(update_data.keys())
+        if forbidden_fields:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Insufficient permissions to update protected fields",
+            )
+        user_in = SelfUserUpdate(**update_data)
+
     # If changing email, enforce uniqueness
     if user_in.email:
         existing = await service.get_user_by_email(user_in.email)

@@ -27,6 +27,15 @@ export const formatCompanyName = (companyName) => {
 };
 
 /**
+ * Format a person's name (first + last) for display.
+ */
+export const formatPersonName = (firstName, lastName) => {
+  const first = toTitleCase((firstName || '').trim());
+  const last = toTitleCase((lastName || '').trim());
+  return [first, last].filter(Boolean).join(' ').trim();
+};
+
+/**
  * Clean company name for database storage
  * @param {string} companyName - The company name from user input
  * @returns {string} - The cleaned company name for storage

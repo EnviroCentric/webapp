@@ -58,8 +58,11 @@ class ReportResponse(BaseModel):
     longitude: Optional[float] = None
     location_label: Optional[str] = None
     worker_name: Optional[str] = None
-    
+    technician_user_id: Optional[int] = None
+    technician_name: Optional[str] = None
+
     # Related data
+    technician_user_name: Optional[str] = None
     project_name: Optional[str] = None
     company_name: Optional[str] = None
     address_name: Optional[str] = None
@@ -187,8 +190,11 @@ class LegacyReportResponse(BaseModel):
     longitude: Optional[float] = None
     location_label: Optional[str] = None
     worker_name: Optional[str] = None
-    
+    technician_user_id: Optional[int] = None
+    technician_name: Optional[str] = None
+
     # Related data
+    technician_user_name: Optional[str] = None
     project_name: Optional[str] = None
     company_name: Optional[str] = None
     address_name: Optional[str] = None

@@ -60,6 +60,8 @@ async def upload_report_pdf(
     longitude: Optional[float] = Form(None),
     location_label: Optional[str] = Form(None, description="Optional sub-location label for the address"),
     worker_name: Optional[str] = Form(None, description="Required when report_kind=personal"),
+    technician_user_id: Optional[int] = Form(None, description="Optional technician user id"),
+    technician_name: Optional[str] = Form(None, description="Technician name (freeform)"),
     report_name: Optional[str] = Form(None),
     notes: Optional[str] = Form(None),
     file: UploadFile = File(...),
@@ -134,6 +136,8 @@ async def upload_report_pdf(
         longitude,
         location_label,
         worker_name.strip() if worker_name else None,
+        technician_user_id,
+        (technician_name or "").strip() or None,
         rel_path,
         current_user["id"],
         json.dumps({}),
@@ -239,32 +243,45 @@ async def get_report(
     report_service: ReportService = Depends(get_report_service),
     db: Pool = Depends(get_db)
 ):
-    """Get a report by ID. Access control based on company affiliation and visibility."""
+    """Get a report by ID.
+
+    Access rules match the download endpoint:
+    - Client users: must belong to the report's project company.
+    - Employees: must be technician+ and (if below manager) assigned to the project.
+    """
     report = await report_service.get_report_by_id(report_id)
     if not report:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Report not found"
         )
-    
+
+    project_company_id = await db.fetchval(
+        "SELECT company_id FROM projects WHERE id = $1",
+        report.project_id,
+    )
+
     role_level = await get_user_role_level(db, current_user.id)
-    
-    # Superusers can access any report
-    if current_user.company_id is None:
-        return report
-    
-    # Company users can only access reports from their company's projects
+
+    # Client users
     if current_user.company_id is not None:
-        # Check if report belongs to user's company projects
-        # This would require additional query to verify company ownership
-        
-        # For client users (below supervisor), only show client-visible reports
-        if role_level < 80 and not report.client_visible:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You don't have access to this report"
-            )
-    
+        if current_user.company_id != project_company_id:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        return report
+
+    # Employee users
+    if role_level < 50 and not current_user.is_superuser:
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
+    if not current_user.is_superuser and role_level < 90:
+        assigned = await db.fetchval(
+            query_manager.check_technician_assigned_to_project,
+            report.project_id,
+            current_user.id,
+        )
+        if not assigned:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+
     return report
 
 
@@ -368,12 +385,22 @@ async def list_reports(
     elif project_id:
         reports = await report_service.get_project_reports(project_id)
     elif company_id:
-        # Only superusers or the company itself can filter by company_id
-        if current_user.company_id is not None and current_user.company_id != company_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="You can only access reports from your own company"
-            )
+        # Filtering by company_id should be limited:
+        # - Company users may only request their own company.
+        # - Employee users must be supervisor+ (or superuser).
+        if current_user.company_id is not None:
+            if current_user.company_id != company_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="You can only access reports from your own company"
+                )
+        else:
+            if role_level < 80 and not current_user.is_superuser:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Only supervisors and higher can filter by company"
+                )
+
         reports = await report_service.get_company_reports(company_id)
     elif current_user.company_id is not None:
         # Company users see only their company's reports

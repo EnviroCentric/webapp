@@ -179,3 +179,42 @@ async def test_refresh_token_invalid(client: AsyncClient):
         json={"refresh_token": "invalid_token"},
     )
     assert resp.status_code == status.HTTP_401_UNAUTHORIZED
+
+
+async def test_refresh_token_rejected_for_inactive_user(client: AsyncClient, admin_token_headers: dict):
+    created = await client.post(
+        "/api/v1/users",
+        json={
+            "email": "inactive@example.com",
+            "password": "TestPass123!@#",
+            "first_name": "Inactive",
+            "last_name": "User",
+        },
+        headers=admin_token_headers,
+    )
+    assert created.status_code == status.HTTP_201_CREATED
+    user_id = created.json()["id"]
+
+    login_resp = await client.post(
+        "/api/v1/auth/login",
+        data={
+            "username": "inactive@example.com",
+            "password": "TestPass123!@#",
+        },
+    )
+    assert login_resp.status_code == status.HTTP_200_OK
+    refresh_token = login_resp.json()["refresh_token"]
+
+    deactivate_resp = await client.patch(
+        f"/api/v1/users/{user_id}",
+        json={"is_active": False},
+        headers=admin_token_headers,
+    )
+    assert deactivate_resp.status_code == status.HTTP_200_OK
+
+    refresh_resp = await client.post(
+        "/api/v1/auth/refresh",
+        json={"refresh_token": refresh_token},
+    )
+    assert refresh_resp.status_code == status.HTTP_401_UNAUTHORIZED
+    assert refresh_resp.json()["detail"] == "Inactive user"

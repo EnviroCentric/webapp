@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import AddressInput from '../components/AddressInput';
+import { formatPersonName } from '../utils/textUtils';
 
 const REPORT_KINDS = [
   { value: 'personal', label: 'Personal' },
@@ -28,6 +29,9 @@ export default function ReportUpload() {
   const [locationLabel, setLocationLabel] = useState('');
   const [locationOptions, setLocationOptions] = useState([]);
   const [workerName, setWorkerName] = useState('');
+  const [technicianName, setTechnicianName] = useState('');
+  const [technicianUserId, setTechnicianUserId] = useState(null);
+  const [technicianSuggestions, setTechnicianSuggestions] = useState([]);
   const [notes, setNotes] = useState('');
   const [file, setFile] = useState(null);
 
@@ -118,9 +122,37 @@ export default function ReportUpload() {
     setLocationLabel('');
     setLocationOptions([]);
     setWorkerName('');
+    setTechnicianName('');
+    setTechnicianUserId(null);
     setNotes('');
     setFile(null);
   }, [selectedProjectId, reportKind]);
+
+  useEffect(() => {
+    const loadTechnicians = async () => {
+      if (!selectedProjectId) {
+        setTechnicianSuggestions([]);
+        return;
+      }
+
+      try {
+        const resp = await api.get(`/api/v1/projects/${selectedProjectId}/technicians`);
+        const techs = resp.data || [];
+        setTechnicianSuggestions(
+          techs.map(t => ({
+            id: t.id,
+            name: formatPersonName(t.first_name, t.last_name),
+          }))
+        );
+      } catch (err) {
+        // Non-fatal: still allow freeform entry.
+        console.warn('Failed to load assigned technicians:', err);
+        setTechnicianSuggestions([]);
+      }
+    };
+
+    loadTechnicians();
+  }, [selectedProjectId]);
 
   useEffect(() => {
     const loadLocationOptions = async () => {
@@ -209,6 +241,8 @@ export default function ReportUpload() {
       if (address.longitude != null) data.append('longitude', String(address.longitude));
       if (locationLabel.trim()) data.append('location_label', locationLabel.trim());
       if (reportKind === 'personal') data.append('worker_name', workerName.trim());
+      if (technicianName.trim()) data.append('technician_name', technicianName.trim());
+      if (technicianUserId != null) data.append('technician_user_id', String(technicianUserId));
       if (notes.trim()) data.append('notes', notes.trim());
       data.append('file', file);
 
@@ -222,6 +256,8 @@ export default function ReportUpload() {
       setAddress({});
       setLocationLabel('');
       setWorkerName('');
+      setTechnicianName('');
+      setTechnicianUserId(null);
       setNotes('');
       setFile(null);
     } catch (err) {
@@ -340,6 +376,31 @@ export default function ReportUpload() {
                   />
                 </div>
               )}
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Technician</label>
+                <input
+                  type="text"
+                  value={technicianName}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setTechnicianName(v);
+                    const match = technicianSuggestions.find(t => t.name === v);
+                    setTechnicianUserId(match ? match.id : null);
+                  }}
+                  list="report-technician-options"
+                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                  placeholder="Start typing to search assigned technicians..."
+                />
+                <datalist id="report-technician-options">
+                  {technicianSuggestions.map((t) => (
+                    <option key={t.id} value={t.name} />
+                  ))}
+                </datalist>
+                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  Free text is allowed. Suggestions come from employees assigned to the selected project.
+                </div>
+              </div>
             </div>
 
             <div>
