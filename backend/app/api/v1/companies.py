@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from typing import List
 import asyncpg
 from app.core.security import get_current_user
+from app.core.deps import require_admin
 from app.db.session import get_db
 from app.services.companies import CompanyService, CompanyCreate, CompanyUpdate, CompanyResponse
 
@@ -12,23 +13,17 @@ router = APIRouter(
 )
 
 
-def require_admin_or_manager(current_user: dict = Depends(get_current_user)):
-    """Dependency to require admin or manager level access."""
-    if current_user.get("highest_level", 0) < 80:  # supervisor level or higher
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Insufficient permissions. Requires supervisor level or higher."
-        )
-    return current_user
+# NOTE: company records are admin-managed.
+# Managers/supervisors can still view companies through list/get.
 
 
 @router.post("/", response_model=CompanyResponse, status_code=status.HTTP_201_CREATED)
 async def create_company(
     company_in: CompanyCreate,
-    current_user: dict = Depends(require_admin_or_manager),
+    current_user: dict = Depends(require_admin),
     db: asyncpg.Pool = Depends(get_db)
 ):
-    """Create a new client company. Requires supervisor level or higher."""
+    """Create a new client company. Admin only."""
     service = CompanyService(db)
     
     # Check if company with same name already exists
@@ -75,10 +70,10 @@ async def get_company(
 async def update_company(
     company_id: int,
     company_in: CompanyUpdate,
-    current_user: dict = Depends(require_admin_or_manager),
+    current_user: dict = Depends(require_admin),
     db: asyncpg.Pool = Depends(get_db)
 ):
-    """Update a company. Requires supervisor level or higher."""
+    """Update a company. Admin only."""
     service = CompanyService(db)
     
     company = await service.update_company(company_id, company_in)
@@ -94,10 +89,10 @@ async def update_company(
 @router.delete("/{company_id}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_company(
     company_id: int,
-    current_user: dict = Depends(require_admin_or_manager),
+    current_user: dict = Depends(require_admin),
     db: asyncpg.Pool = Depends(get_db)
 ):
-    """Delete a company. Requires supervisor level or higher."""
+    """Delete a company. Admin only."""
     service = CompanyService(db)
     
     # Check if company exists
@@ -189,6 +184,39 @@ async def get_company_users(
         "company": company,
         "users": users,
         "total_users": len(users)
+    }
+
+
+@router.get("/{company_id}/clients")
+async def get_company_clients(
+    company_id: int,
+    current_user: dict = Depends(get_current_user),
+    db: asyncpg.Pool = Depends(get_db)
+):
+    """Get client users for a company."""
+    service = CompanyService(db)
+
+    company = await service.get_company_by_id(company_id)
+    if not company:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Company not found"
+        )
+
+    user_company_id = current_user.get("company_id")
+    user_level = current_user.get("highest_level", 0)
+
+    if user_level < 50 and user_company_id != company_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Access denied. You can only view your own company clients."
+        )
+
+    clients = await service.get_company_clients(company_id)
+    return {
+        "company": company,
+        "clients": clients,
+        "total_clients": len(clients)
     }
 
 

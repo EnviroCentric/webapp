@@ -26,6 +26,7 @@ class CompanyUpdate(BaseModel):
     city: Optional[str] = None
     state: Optional[str] = None
     zip: Optional[str] = None
+    primary_contact_user_id: Optional[int] = None
 
 
 class CompanyResponse(BaseModel):
@@ -37,6 +38,17 @@ class CompanyResponse(BaseModel):
     state: Optional[str] = None
     zip: Optional[str] = None
     created_at: datetime
+
+    # Primary contact (client lead)
+    primary_contact_user_id: Optional[int] = None
+    primary_contact_name: Optional[str] = None
+    primary_contact_email: Optional[str] = None
+    primary_contact_phone: Optional[str] = None
+
+    # Lightweight stats (list views)
+    total_projects: Optional[int] = None
+    open_projects: Optional[int] = None
+    client_count: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
     
@@ -109,7 +121,8 @@ class CompanyService:
                 update_data.get('address_line2'),
                 update_data.get('city'),
                 update_data.get('state'),
-                update_data.get('zip')
+                update_data.get('zip'),
+                update_data.get('primary_contact_user_id'),
             )
             return CompanyResponse(**dict(row)) if row else None
 
@@ -133,6 +146,15 @@ class CompanyService:
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(
                 query_manager.get_company_users,
+                company_id
+            )
+            return [dict(row) for row in rows]
+
+    async def get_company_clients(self, company_id: int) -> List[dict]:
+        """Get client users belonging to a company."""
+        async with self.pool.acquire() as conn:
+            rows = await conn.fetch(
+                query_manager.get_company_clients,
                 company_id
             )
             return [dict(row) for row in rows]

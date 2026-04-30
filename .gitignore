@@ -9,3 +9,6 @@ __pycache__/
 *.pywz
 *.pyzw
 website-db-revamp/
+
+# Uploaded files / local storage
+backend/storage/

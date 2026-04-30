@@ -10,6 +10,9 @@ services:
       - /app/node_modules
     environment:
       - VITE_API_URL=${VITE_API_URL}
+      # Vite only exposes env vars prefixed with VITE_ to the frontend bundle.
+      # Keep the canonical key name in .env as GOOGLE_MAPS_API_KEY and map it here.
+      - VITE_GOOGLE_PLACES_API_KEY=${GOOGLE_MAPS_API_KEY}
     depends_on:
       - backend
 
@@ -36,6 +39,7 @@ services:
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS}
       - BACKEND_PORT=${BACKEND_PORT}
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - REPORTS_STORAGE_DIR=/app/storage/reports
     depends_on:
       db:
         condition: service_healthy

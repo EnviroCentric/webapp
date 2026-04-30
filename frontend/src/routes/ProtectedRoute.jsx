@@ -1,9 +1,10 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
+  const { isAuthenticated, loading, user } = useAuth();
+  const location = useLocation();
 
   if (loading) {
     return (
@@ -14,8 +15,13 @@ export default function ProtectedRoute({ children }) {
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
+  }
+
+  // Force first-login password change.
+  if (user?.must_change_password && location.pathname !== '/profile/password') {
+    return <Navigate to="/profile/password" replace state={{ forced: true, from: location }} />;
   }
 
   return children;
-} 
+}

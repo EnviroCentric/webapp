@@ -12,14 +12,18 @@ import ProfileEdit from './pages/ProfileEdit';
 import ProfilePassword from './pages/ProfilePassword';
 import ProtectedRoute from './routes/ProtectedRoute';
 import Login from './pages/Login';
-import Register from './pages/Register';
 import UserManagement from './pages/UserManagement';
 import Projects from './pages/Projects';
 import ProjectDashboard from './pages/ProjectDashboard';
+import ProjectReports from './pages/ProjectReports';
 import SampleCollection from './pages/SampleCollection';
 import CompanyManagement from './pages/CompanyManagement';
 import CompanyDetails from './pages/CompanyDetails';
+import CompanyReports from './pages/CompanyReports';
 import CompanyDashboard from './pages/CompanyDashboard';
+import ReportUpload from './pages/ReportUpload';
+import ReportDetails from './pages/ReportDetails';
+import AdminPortal from './pages/AdminPortal';
 
 import { RolesProvider } from './context/RolesContext';
 import { PermissionsProvider } from './context/PermissionsContext';
@@ -62,6 +66,14 @@ function App() {
                     }
                   />
                   <Route
+                    path="/projects/:projectId/reports"
+                    element={
+                      <ProtectedRoute>
+                        <ProjectReports />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/projects/:projectId/addresses/:addressId/collect-samples"
                     element={
                       <ProtectedRoute>
@@ -94,7 +106,7 @@ function App() {
                     }
                   />
                   <Route path="/login" element={<Login />} />
-                  <Route path="/register" element={<Register />} />
+                  <Route path="/register" element={<Login />} />
                   <Route
                     path="/user-management"
                     element={
@@ -120,10 +132,42 @@ function App() {
                     }
                   />
                   <Route
+                    path="/companies/:companyId/reports"
+                    element={
+                      <ProtectedRoute>
+                        <CompanyReports />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
                     path="/company/me"
                     element={
                       <ProtectedRoute>
                         <CompanyDashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports/upload"
+                    element={
+                      <ProtectedRoute>
+                        <ReportUpload />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports/:reportId"
+                    element={
+                      <ProtectedRoute>
+                        <ReportDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/admin"
+                    element={
+                      <ProtectedRoute>
+                        <AdminPortal />
                       </ProtectedRoute>
                     }
                   />

@@ -4,13 +4,15 @@ import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 import Modal from '../components/Modal';
 import { formatDate } from '../utils/dateUtils';
-import { formatCompanyName } from '../utils/textUtils';
+import { formatCompanyName, formatPersonName, toTitleCase } from '../utils/textUtils';
 
 const CompanyDetails = () => {
   const { companyId } = useParams();
   const [company, setCompany] = useState(null);
-  const [companyUsers, setCompanyUsers] = useState([]);
+  const [companyClients, setCompanyClients] = useState([]);
   const [companyProjects, setCompanyProjects] = useState([]);
+  const [primaryContactUserId, setPrimaryContactUserId] = useState('');
+  const [savingPrimaryContact, setSavingPrimaryContact] = useState(false);
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -48,11 +50,36 @@ const CompanyDetails = () => {
     try {
       // Fetch company info
       const companyResponse = await api.get(`/api/v1/companies/${companyId}`);
-      setCompany(companyResponse.data);
 
-      // Fetch company users
-      const usersResponse = await api.get(`/api/v1/companies/${companyId}/users`);
-      setCompanyUsers(usersResponse.data.users || []);
+      // Fetch company clients
+      const clientsResponse = await api.get(`/api/v1/companies/${companyId}/clients`);
+      const clients = clientsResponse.data.clients || [];
+      setCompanyClients(clients);
+
+      // Default primary contact: first client assigned (created_at ASC) if none is set.
+      if (!companyResponse.data.primary_contact_user_id && clients.length > 0) {
+        const firstClientId = clients[0].id;
+        try {
+          await api.put(`/api/v1/companies/${companyId}`, {
+            primary_contact_user_id: firstClientId,
+          });
+          // Update local company state so the UI reflects the default immediately.
+          companyResponse.data.primary_contact_user_id = firstClientId;
+          companyResponse.data.primary_contact_name = formatPersonName(clients[0].first_name, clients[0].last_name);
+          companyResponse.data.primary_contact_email = clients[0].email;
+          companyResponse.data.primary_contact_phone = clients[0].phone;
+        } catch (err) {
+          // Non-fatal; just don't auto-assign.
+          console.warn('Failed to set default primary contact:', err);
+        }
+      }
+
+      // Seed the dropdown selection.
+      const effectivePrimaryId = companyResponse.data.primary_contact_user_id || (clients[0]?.id ?? '');
+      setPrimaryContactUserId(effectivePrimaryId ? String(effectivePrimaryId) : '');
+
+      // Update company state after we have clients/contact defaults.
+      setCompany({ ...companyResponse.data });
 
       // Fetch company projects
       const projectsResponse = await api.get(`/api/v1/companies/${companyId}/projects`);
@@ -105,8 +132,8 @@ const CompanyDetails = () => {
     }
   };
 
-  const handleRemoveUser = async (userId) => {
-    if (window.confirm('Are you sure you want to remove this user from the company?')) {
+  const handleRemoveClient = async (userId) => {
+    if (window.confirm('Are you sure you want to remove this client from the company?')) {
       try {
         // Remove user from company by setting company_id to null
         await api.patch(`/api/v1/users/${userId}`, {
@@ -116,8 +143,8 @@ const CompanyDetails = () => {
         await fetchCompanyDetails();
         await fetchAllUsers();
       } catch (err) {
-        setError('Failed to remove user from company');
-        console.error('Error removing user:', err);
+        setError('Failed to remove client from company');
+        console.error('Error removing client from company:', err);
       }
     }
   };
@@ -240,6 +267,12 @@ const CompanyDetails = () => {
         </div>
         <div className="flex space-x-3">
           <button
+            onClick={() => navigate(`/companies/${companyId}/reports`)}
+            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+          >
+            View Reports
+          </button>
+          <button
             onClick={openEditModal}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
           >
@@ -253,7 +286,7 @@ const CompanyDetails = () => {
           </button>
           <button
             onClick={() => setIsAssignUserModalOpen(true)}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
           >
             Assign Client
           </button>
@@ -280,6 +313,60 @@ const CompanyDetails = () => {
               <p className="text-lg text-gray-900 dark:text-white">{formatDate(company.created_at)}</p>
             </div>
           </div>
+
+          {/* Primary Contact */}
+          <div className="mt-6 text-center">
+            <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Primary Contact</label>
+            {company.primary_contact_name ? (
+              <div className="text-gray-900 dark:text-white space-y-1 text-lg">
+                <div className="font-semibold">{toTitleCase(company.primary_contact_name)}</div>
+                {company.primary_contact_email && <div className="text-base">{company.primary_contact_email}</div>}
+                {company.primary_contact_phone && <div className="text-base">{company.primary_contact_phone}</div>}
+              </div>
+            ) : (
+              <div className="text-gray-500 dark:text-gray-400 italic text-lg">No contact assigned</div>
+            )}
+
+            {companyClients.length > 0 && (
+              <div className="mt-4 max-w-md mx-auto">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Set Primary Contact</label>
+                <div className="flex gap-2">
+                  <select
+                    value={primaryContactUserId}
+                    onChange={(e) => setPrimaryContactUserId(e.target.value)}
+                    className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white px-3 py-2"
+                  >
+                    {companyClients.map((c) => (
+                      <option key={c.id} value={String(c.id)}>
+                        {formatPersonName(c.first_name, c.last_name)}
+                      </option>
+                    ))}
+                  </select>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      if (!primaryContactUserId) return;
+                      try {
+                        setSavingPrimaryContact(true);
+                        await api.put(`/api/v1/companies/${companyId}`, {
+                          primary_contact_user_id: parseInt(primaryContactUserId),
+                        });
+                        await fetchCompanyDetails();
+                      } catch (err) {
+                        setError('Failed to update primary contact');
+                      } finally {
+                        setSavingPrimaryContact(false);
+                      }
+                    }}
+                    disabled={!primaryContactUserId || savingPrimaryContact}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                  >
+                    {savingPrimaryContact ? 'Saving...' : 'Save'}
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
           {/* Company Address - Always show section, even if empty */}
           <div className="mt-6 text-center">
             <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 mb-3">Company Address</label>
@@ -302,26 +389,26 @@ const CompanyDetails = () => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-        {/* Users Section */}
+        {/* Clients Section */}
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Users ({companyUsers.length})</h2>
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Clients ({companyClients.length})</h2>
           </div>
           
-          {companyUsers.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No users assigned</p>
+          {companyClients.length === 0 ? (
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No clients assigned</p>
           ) : (
             <div className="space-y-3">
-              {companyUsers.map((companyUser) => (
-                <div key={companyUser.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded">
+              {companyClients.map((c) => (
+                <div key={c.id} className="flex items-center justify-between p-3 border border-gray-200 dark:border-gray-700 rounded">
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">
-                      {companyUser.first_name} {companyUser.last_name}
+                      {formatPersonName(c.first_name, c.last_name)}
                     </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">{companyUser.email}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">{c.email}</p>
                   </div>
                   <button
-                    onClick={() => handleRemoveUser(companyUser.id)}
+                    onClick={() => handleRemoveClient(c.id)}
                     className="text-red-600 hover:text-red-500 text-sm font-medium"
                   >
                     Remove
@@ -336,12 +423,6 @@ const CompanyDetails = () => {
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Projects ({companyProjects.length})</h2>
-            <button
-              onClick={() => navigate('/projects')}
-              className="text-blue-600 hover:text-blue-500 text-sm font-medium"
-            >
-              View All Projects
-            </button>
           </div>
           
           {companyProjects.length === 0 ? (
@@ -365,11 +446,6 @@ const CompanyDetails = () => {
                       {project.status}
                     </span>
                   </div>
-                  {project.visit_count !== undefined && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Visits: {project.visit_count} | Samples: {project.sample_count || 0}
-                    </p>
-                  )}
                 </div>
               ))}
               {companyProjects.length > 5 && (

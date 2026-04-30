@@ -26,7 +26,6 @@ class ReportService:
             row = await conn.fetchrow(
                 query_manager.create_report,
                 report_in.project_id,
-                report_in.address_id,
                 report_in.report_name,
                 None,  # report_file_path - will be set when file is generated
                 generated_by,
@@ -166,22 +165,11 @@ class ReportService:
             return reports
 
     async def get_address_reports(self, address_id: int) -> List[LegacyReportResponse]:
-        """Get all reports for a specific address."""
-        async with self.pool.acquire() as conn:
-            rows = await conn.fetch(
-                query_manager.get_address_reports,
-                address_id
-            )
-            reports = []
-            for row in rows:
-                report_dict = dict(row)
-                if report_dict.get('report_data'):
-                    try:
-                        report_dict['report_data'] = json.loads(report_dict['report_data'])
-                    except (json.JSONDecodeError, TypeError):
-                        report_dict['report_data'] = {}
-                reports.append(LegacyReportResponse(**report_dict))
-            return reports
+        """Get all reports for a specific address.
+
+        Deprecated: reports are project-scoped after migration 0007.
+        """
+        return []
 
     async def get_pending_reports(self) -> List[LegacyReportResponse]:
         """Get all reports that are not yet final."""
@@ -199,14 +187,11 @@ class ReportService:
             return reports
 
     async def check_report_exists(self, project_id: int, address_id: int) -> bool:
-        """Check if a report already exists for a project/address combination."""
-        async with self.pool.acquire() as conn:
-            result = await conn.fetchval(
-                query_manager.check_report_exists,
-                project_id,
-                address_id
-            )
-            return bool(result)
+        """Check if a report already exists for a project/address combination.
+
+        Deprecated: address-scoped reports are no longer supported.
+        """
+        return False
 
     # Report generation methods
     async def generate_project_report(

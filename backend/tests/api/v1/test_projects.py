@@ -2,217 +2,213 @@ import pytest
 from datetime import date
 from httpx import AsyncClient
 from fastapi import status
-from app.schemas.project import ProjectCreate, ProjectUpdate, AddressCreate, AddressUpdate
 
-@pytest.mark.asyncio
-async def test_create_project_success(client: AsyncClient, db_pool, technician_token_headers):
-    """Test creating a project with valid data."""
-    project_data = {"name": "Test Project"}
-    response = await client.post("/api/v1/projects/", json=project_data, headers=technician_token_headers)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "Test Project"
-    assert "id" in data
+pytestmark = pytest.mark.asyncio
 
-@pytest.mark.asyncio
-async def test_create_project_unauthorized(client: AsyncClient, db_pool, normal_user_token_headers):
-    """Test creating a project without proper authorization."""
-    project_data = {"name": "Test Project"}
-    response = await client.post("/api/v1/projects/", json=project_data, headers=normal_user_token_headers)
-    assert response.status_code == 403
 
-@pytest.mark.asyncio
-async def test_get_project_success(client: AsyncClient, db_pool, technician_token_headers, admin_token_headers):
-    """Test getting a project that exists."""
-    # Create a project first
-    project_data = {"name": "Test Project"}
-    create_response = await client.post("/api/v1/projects/", json=project_data, headers=admin_token_headers)
-    project_id = create_response.json()["id"]
-
-    # Get technician user ID from token
-    tech_response = await client.get("/api/v1/users/me", headers=technician_token_headers)
-    technician_id = tech_response.json()["id"]
-
-    # Assign technician to project
-    await client.post(
-        f"/api/v1/projects/{project_id}/technicians",
-        json={"user_id": technician_id},
-        headers=admin_token_headers
+async def _create_company(client: AsyncClient, admin_token_headers: dict, *, name: str = "test company") -> dict:
+    resp = await client.post(
+        "/api/v1/companies/",
+        json={"name": name},
+        headers=admin_token_headers,
     )
+    assert resp.status_code == status.HTTP_201_CREATED, resp.text
+    return resp.json()
 
-    # Get the project
-    response = await client.get(f"/api/v1/projects/{project_id}", headers=technician_token_headers)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "Test Project"
-    assert data["id"] == project_id
-    assert isinstance(data["addresses"], list)
 
-@pytest.mark.asyncio
-async def test_get_project_not_found(client: AsyncClient, db_pool, technician_token_headers):
-    """Test getting a project that doesn't exist."""
-    response = await client.get("/api/v1/projects/999", headers=technician_token_headers)
-    assert response.status_code == 404
-
-@pytest.mark.asyncio
-async def test_update_project_success(client: AsyncClient, db_pool, technician_token_headers):
-    """Test updating a project with valid data."""
-    # Create a project first
-    project_data = {"name": "Test Project"}
-    create_response = await client.post("/api/v1/projects/", json=project_data, headers=technician_token_headers)
-    project_id = create_response.json()["id"]
-
-    # Update the project
-    update_data = {"name": "Updated Project"}
-    response = await client.patch(f"/api/v1/projects/{project_id}", json=update_data, headers=technician_token_headers)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "Updated Project"
-
-@pytest.mark.asyncio
-async def test_create_address_success(client: AsyncClient, db_pool, technician_token_headers):
-    """Test creating an address with valid data."""
-    # Create a project first
-    project_data = {"name": "Test Project"}
-    create_response = await client.post("/api/v1/projects/", json=project_data, headers=technician_token_headers)
-    project_id = create_response.json()["id"]
-
-    # Create an address
-    address_data = {"name": "123 Test St", "date": date.today().isoformat()}
-    response = await client.post(f"/api/v1/projects/{project_id}/addresses", json=address_data, headers=technician_token_headers)
-    assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "123 Test St"
-    assert data["date"] == date.today().isoformat()
-
-@pytest.mark.asyncio
-async def test_create_duplicate_address_same_day(client: AsyncClient, db_pool, technician_token_headers):
-    """Test creating a duplicate address on the same day."""
-    # Create a project first
-    project_data = {"name": "Test Project"}
-    create_response = await client.post("/api/v1/projects/", json=project_data, headers=technician_token_headers)
-    project_id = create_response.json()["id"]
-
-    # Create first address
-    address_data = {"name": "123 Test St", "date": date.today().isoformat()}
-    await client.post(f"/api/v1/projects/{project_id}/addresses", json=address_data, headers=technician_token_headers)
-
-    # Try to create duplicate address
-    response = await client.post(f"/api/v1/projects/{project_id}/addresses", json=address_data, headers=technician_token_headers)
-    assert response.status_code == 400
-
-@pytest.mark.asyncio
-async def test_assign_technician_success(client: AsyncClient, db_pool, admin_token_headers, technician_token_headers):
-    """Test assigning a technician to a project."""
-    # Create a project first
-    project_data = {"name": "Test Project"}
-    create_response = await client.post("/api/v1/projects/", json=project_data, headers=admin_token_headers)
-    project_id = create_response.json()["id"]
-
-    # Get technician user ID from token
-    tech_response = await client.get("/api/v1/users/me", headers=technician_token_headers)
-    technician_id = tech_response.json()["id"]
-
-    # Assign technician
-    response = await client.post(
-        f"/api/v1/projects/{project_id}/technicians",
-        json={"user_id": technician_id},
-        headers=admin_token_headers
-    )
-    assert response.status_code == 204
-
-@pytest.mark.asyncio
-async def test_assign_technician_unauthorized(client: AsyncClient, db_pool, technician_token_headers):
-    """Test assigning a technician without proper authorization."""
-    # Create a project first
-    project_data = {"name": "Test Project"}
-    create_response = await client.post("/api/v1/projects/", json=project_data, headers=technician_token_headers)
-    project_id = create_response.json()["id"]
-
-    # Try to assign technician
-    response = await client.post(
-        f"/api/v1/projects/{project_id}/technicians",
-        json={"user_id": 999},
-        headers=technician_token_headers
-    )
-    assert response.status_code == 403
-
-@pytest.mark.asyncio
-async def test_remove_technician_success(client, admin_token_headers, technician_user, technician_token_headers):
-    """Test removing a technician from a project."""
-    # Create a project first
-    response = await client.post(
+async def _create_project(client: AsyncClient, admin_token_headers: dict, *, company_id: int, name: str) -> dict:
+    resp = await client.post(
         "/api/v1/projects/",
+        json={"company_id": company_id, "name": name},
         headers=admin_token_headers,
-        json={"name": "Test Project"}
     )
-    assert response.status_code == 200
-    project = response.json()
+    assert resp.status_code == status.HTTP_201_CREATED, resp.text
+    return resp.json()
 
-    # Assign technician
-    response = await client.post(
+
+async def _create_visit(
+    client: AsyncClient,
+    manager_token_headers: dict,
+    *,
+    project_id: int,
+    technician_id: int,
+    description: str = "Warehouse A",
+) -> dict:
+    resp = await client.post(
+        f"/api/v1/projects/{project_id}/visits",
+        json={
+            "project_id": project_id,
+            "visit_date": date.today().isoformat(),
+            "technician_id": technician_id,
+            "description": description,
+            "address_line1": "123 Test St",
+            "city": "Testville",
+            "state": "TS",
+            "zip": "12345",
+        },
+        headers=manager_token_headers,
+    )
+    assert resp.status_code == status.HTTP_201_CREATED, resp.text
+    return resp.json()
+
+
+async def test_create_project_success_admin(client: AsyncClient, admin_token_headers: dict):
+    """Admin (role level 100) can create a project."""
+    company = await _create_company(client, admin_token_headers, name="acme")
+    project = await _create_project(client, admin_token_headers, company_id=company["id"], name="Test Project")
+    assert project["name"] == "Test Project"
+    assert project["company_id"] == company["id"]
+
+
+async def test_create_project_forbidden_field_tech(client: AsyncClient, field_tech_token_headers: dict):
+    """Field tech (level 50) cannot create projects (requires supervisor+)."""
+    resp = await client.post(
+        "/api/v1/projects/",
+        json={"company_id": 1, "name": "Should Fail"},
+        headers=field_tech_token_headers,
+    )
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+
+async def test_users_min_role_level_filters_project_assignees(
+    client: AsyncClient,
+    db_pool,
+    admin_token_headers: dict,
+    normal_user,
+    field_tech_user,
+):
+    """Project assignment picker should only receive technician-level users."""
+    async with db_pool.acquire() as conn:
+        await conn.execute("UPDATE users SET highest_level = 0 WHERE id = $1", field_tech_user.id)
+
+    resp = await client.get("/api/v1/users?min_role_level=50", headers=admin_token_headers)
+    assert resp.status_code == status.HTTP_200_OK, resp.text
+
+    user_ids = {user["id"] for user in resp.json()}
+    assert field_tech_user.id in user_ids
+    assert normal_user.id not in user_ids
+
+
+async def test_employees_endpoint_includes_technicians_with_email(
+    client: AsyncClient,
+    db_pool,
+    admin_token_headers: dict,
+    field_tech_user,
+):
+    """Project technician picker uses the employees endpoint and needs email labels."""
+    async with db_pool.acquire() as conn:
+        await conn.execute("UPDATE users SET highest_level = 0 WHERE id = $1", field_tech_user.id)
+
+    resp = await client.get("/api/v1/users/employees", headers=admin_token_headers)
+    assert resp.status_code == status.HTTP_200_OK, resp.text
+
+    tech = next((user for user in resp.json() if user["id"] == field_tech_user.id), None)
+    assert tech is not None
+    assert tech["email"] == field_tech_user.email
+
+
+async def test_get_project_requires_assignment_for_field_tech(
+    client: AsyncClient,
+    admin_token_headers: dict,
+    field_tech_token_headers: dict,
+    field_tech_user,
+):
+    """Non-manager employees must be assigned to access a project."""
+    company = await _create_company(client, admin_token_headers, name="acme")
+    project = await _create_project(client, admin_token_headers, company_id=company["id"], name="Assigned Project")
+
+    # Unassigned access should fail
+    resp = await client.get(f"/api/v1/projects/{project['id']}", headers=field_tech_token_headers)
+    assert resp.status_code == status.HTTP_403_FORBIDDEN
+
+    # Assign field tech
+    assign = await client.post(
         f"/api/v1/projects/{project['id']}/technicians",
+        json={"user_id": field_tech_user.id},
         headers=admin_token_headers,
-        json={"user_id": technician_user.id}
     )
-    assert response.status_code == 204
+    assert assign.status_code == status.HTTP_201_CREATED, assign.text
 
-    # Verify technician can access project
-    response = await client.get(
-        f"/api/v1/projects/{project['id']}",
-        headers=technician_token_headers
+    # Now it should succeed
+    resp = await client.get(f"/api/v1/projects/{project['id']}", headers=field_tech_token_headers)
+    assert resp.status_code == status.HTTP_200_OK
+    assert resp.json()["id"] == project["id"]
+
+
+async def test_project_addresses_lists_visit_addresses(
+    client: AsyncClient,
+    admin_token_headers: dict,
+    manager_token_headers: dict,
+    manager_user,
+):
+    """Project address listing is derived from visit embedded address fields."""
+    company = await _create_company(client, admin_token_headers, name="acme")
+    project = await _create_project(client, admin_token_headers, company_id=company["id"], name="Address Project")
+
+    await _create_visit(
+        client,
+        manager_token_headers,
+        project_id=project["id"],
+        technician_id=manager_user.id,
+        description="Warehouse A",
     )
-    assert response.status_code == 200
 
-    # Remove technician
-    response = await client.delete(
-        f"/api/v1/projects/{project['id']}/technicians/{technician_user.id}",
-        headers=admin_token_headers
-    )
-    assert response.status_code == 204
-
-    # Verify technician can no longer access project
-    response = await client.get(
-        f"/api/v1/projects/{project['id']}",
-        headers=technician_token_headers
-    )
-    assert response.status_code == 403
-
-@pytest.mark.asyncio
-async def test_update_address_preserves_date(client: AsyncClient, db_pool, technician_token_headers):
-    """Test that updating an address preserves its original date."""
-    # Create a project first
-    project_data = {"name": "Test Project"}
-    create_response = await client.post("/api/v1/projects/", json=project_data, headers=technician_token_headers)
-    project_id = create_response.json()["id"]
-
-    # Create address with specific date
-    original_date = date(2024, 1, 1)
-    address_data = {"name": "123 Test St", "date": original_date.isoformat()}
-    create_response = await client.post(f"/api/v1/projects/{project_id}/addresses", json=address_data, headers=technician_token_headers)
-    address_id = create_response.json()["id"]
-
-    # Update address name
-    update_data = {"name": "456 New St"}
-    response = await client.patch(
-        f"/api/v1/projects/{project_id}/addresses/{address_id}",
-        json=update_data,
-        headers=technician_token_headers
-    )
-    assert response.status_code == 200
-    data = response.json()
-    assert data["name"] == "456 New St"
-    assert data["date"] == original_date.isoformat()
-
-@pytest.mark.asyncio
-async def test_get_addresses_for_today(client: AsyncClient, technician_token_headers, admin_token_headers):
-    # Create project and address for today
-    project_resp = await client.post("/api/v1/projects/", json={"name": "Test Project"}, headers=admin_token_headers)
-    project_id = project_resp.json()["id"]
-    today = date.today().isoformat()
-    addr_resp = await client.post(f"/api/v1/projects/{project_id}/addresses", json={"name": "Test Address", "date": today}, headers=admin_token_headers)
-    # Get addresses for today
-    resp = await client.get(f"/api/v1/projects/{project_id}/addresses?date={today}", headers=admin_token_headers)
-    assert resp.status_code == 200
+    resp = await client.get(f"/api/v1/projects/{project['id']}/addresses", headers=admin_token_headers)
+    assert resp.status_code == status.HTTP_200_OK
     addresses = resp.json()
-    assert any(addr["name"] == "Test Address" for addr in addresses) 
+    assert isinstance(addresses, list)
+    assert any(a.get("address_line1") == "123 Test St" for a in addresses)
+
+
+@pytest.mark.parametrize("role_name", ["admin", "manager"])
+async def test_assign_project_allows_admin_and_manager_roles_assigned_via_users_roles_endpoint(
+    client: AsyncClient,
+    admin_token_headers: dict,
+    role_name: str,
+):
+    """Users with manager+ roles should be assignable to projects after roles are replaced via /users/{id}/roles."""
+    company = await _create_company(client, admin_token_headers, name="acme")
+    project = await _create_project(client, admin_token_headers, company_id=company["id"], name=f"Assign {role_name}")
+
+    # Create a new employee user
+    create_resp = await client.post(
+        "/api/v1/users",
+        json={
+            "email": f"{role_name}.assign@example.com",
+            "password": "TestPass123!@#",
+            "first_name": "Role",
+            "last_name": "Assignee",
+            "phone": None,
+            "company_id": None,
+        },
+        headers=admin_token_headers,
+    )
+    assert create_resp.status_code == status.HTTP_201_CREATED, create_resp.text
+    created_user = create_resp.json()
+
+    # Look up role id
+    roles_resp = await client.get("/api/v1/roles/", headers=admin_token_headers)
+    assert roles_resp.status_code == status.HTTP_200_OK, roles_resp.text
+    role_id = next((r["id"] for r in roles_resp.json() if r.get("name") == role_name), None)
+    assert role_id is not None, f"Role '{role_name}' not found"
+
+    # Assign role via the endpoint used by the Admin Portal
+    roles_put = await client.put(
+        f"/api/v1/users/{created_user['id']}/roles",
+        json={"role_ids": [role_id]},
+        headers=admin_token_headers,
+    )
+    assert roles_put.status_code == status.HTTP_200_OK, roles_put.text
+
+    # Verify highest_level is recalculated (used by several access-control queries)
+    user_resp = await client.get(f"/api/v1/users/{created_user['id']}", headers=admin_token_headers)
+    assert user_resp.status_code == status.HTTP_200_OK, user_resp.text
+    assert user_resp.json().get("highest_level", 0) >= 50
+
+    # Now project assignment should work (Admin Portal uses this endpoint)
+    assign = await client.post(
+        f"/api/v1/projects/{project['id']}/technicians",
+        json={"user_id": created_user["id"]},
+        headers=admin_token_headers,
+    )
+    assert assign.status_code == status.HTTP_201_CREATED, assign.text

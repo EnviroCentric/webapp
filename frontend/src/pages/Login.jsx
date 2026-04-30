@@ -3,11 +3,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import Modal from '../components/Modal';
 
-export default function Login({ isOpen, onClose, onSwitchToRegister, successMessage }) {
+export default function Login({ isOpen, onClose, successMessage }) {
   const [formData, setFormData] = useState(() => {
-    const savedData = localStorage.getItem('loginFormData');
-    return savedData ? JSON.parse(savedData) : {
-      email: '',
+    const savedEmail = localStorage.getItem('loginEmail');
+    return {
+      email: savedEmail || '',
       password: '',
     };
   });
@@ -18,15 +18,38 @@ export default function Login({ isOpen, onClose, onSwitchToRegister, successMess
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from?.pathname || '/dashboard';
+
+  const isModal = typeof isOpen === 'boolean';
+  const from = location.state?.from?.pathname;
+
+  // Remove the legacy form cache so previously stored passwords do not linger.
+  useEffect(() => {
+    const savedData = localStorage.getItem('loginFormData');
+    if (!savedData) return;
+
+    try {
+      const parsed = JSON.parse(savedData);
+      if (parsed?.email) {
+        localStorage.setItem('loginEmail', parsed.email);
+        setFormData(prev => ({
+          ...prev,
+          email: prev.email || parsed.email,
+        }));
+      }
+    } catch {
+      // Ignore malformed legacy cache entries and clear them out.
+    }
+
+    localStorage.removeItem('loginFormData');
+  }, []);
 
   // Clear form data when modal is closed
   useEffect(() => {
     if (!isOpen) {
-      setFormData({
-        email: '',
+      setFormData(prev => ({
+        email: prev.email,
         password: '',
-      });
+      }));
       setError('');
       setIsEmailUnregistered(false);
       setShowPassword(false);
@@ -35,9 +58,9 @@ export default function Login({ isOpen, onClose, onSwitchToRegister, successMess
 
   useEffect(() => {
     if (isOpen) {
-      localStorage.setItem('loginFormData', JSON.stringify(formData));
+      localStorage.setItem('loginEmail', formData.email);
     }
-  }, [formData, isOpen]);
+  }, [formData.email, isOpen]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -58,10 +81,23 @@ export default function Login({ isOpen, onClose, onSwitchToRegister, successMess
     setIsLoading(true);
 
     try {
-      await login(formData.email, formData.password);
-      localStorage.removeItem('loginFormData');
-      onClose();
-      navigate(from, { replace: true });
+      const result = await login(formData.email, formData.password);
+      localStorage.setItem('loginEmail', formData.email);
+
+      if (onClose) {
+        onClose();
+      }
+
+      // Always honor forced password-change/client landing; for non-clients, allow returning to the original route.
+      const userData = result?.user;
+      const roles = userData?.roles || [];
+      const roleLevel = Math.max(...roles.map(r => r.level || 0), 0);
+      const hasClientRole = roles.some(r => (r.name || '').toLowerCase() === 'client');
+      const isClient = !!(hasClientRole && userData?.company_id && roleLevel < 100);
+
+      const destination = result?.destination || '/dashboard';
+      const target = isClient ? destination : (from || destination);
+      navigate(target, { replace: true });
     } catch (error) {
       if (error.detail === "Email not registered. Please create an account first.") {
         setError(error.detail);
@@ -74,14 +110,13 @@ export default function Login({ isOpen, onClose, onSwitchToRegister, successMess
     }
   };
 
-  return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="w-full space-y-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
-            Sign in to your account
-          </h2>
-        </div>
+  const content = (
+    <div className="w-full space-y-8">
+      <div>
+        <h2 className="mt-6 text-center text-3xl font-extrabold text-gray-900 dark:text-white">
+          Sign in to your account
+        </h2>
+      </div>
         {successMessage && (
           <div className="rounded-md bg-green-50 dark:bg-green-900/20 p-4">
             <div className="text-sm text-green-700 dark:text-green-400">
@@ -98,17 +133,7 @@ export default function Login({ isOpen, onClose, onSwitchToRegister, successMess
                 </h3>
                 {isEmailUnregistered && (
                   <div className="mt-2 text-sm text-red-700 dark:text-red-400">
-                    <p>
-                      Please{' '}
-                      <button
-                        type="button"
-                        onClick={onSwitchToRegister}
-                        className="font-medium text-red-700 dark:text-red-400 underline hover:text-red-600 dark:hover:text-red-300"
-                      >
-                        create an account
-                      </button>
-                      {' '}or try a different email address.
-                    </p>
+                    <p>Please contact your administrator to request access.</p>
                   </div>
                 )}
               </div>
@@ -187,20 +212,29 @@ export default function Login({ isOpen, onClose, onSwitchToRegister, successMess
               {isLoading ? 'Signing in...' : 'Sign in'}
             </button>
           </div>
-          <div className="text-center">
+        <div className="text-center">
             <p className="text-sm text-gray-600 dark:text-gray-400">
-              Don't have an account?{' '}
-              <button
-                type="button"
-                onClick={onSwitchToRegister}
-                className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300"
-              >
-                Create one now
-              </button>
+              Accounts are provisioned by an administrator. If you need access, contact your admin.
             </p>
           </div>
         </form>
       </div>
-    </Modal>
+  );
+
+  if (isModal) {
+    return (
+      <Modal isOpen={isOpen} onClose={onClose}>
+        {content}
+      </Modal>
+    );
+  }
+
+  // Page mode (/login route)
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+      <div className="w-full max-w-md bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6">
+        {content}
+      </div>
+    </div>
   );
 } 

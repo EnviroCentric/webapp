@@ -20,9 +20,6 @@ class UserBase(BaseModel):
     first_name: Optional[str] = None
     last_name: Optional[str] = None
     phone: Optional[str] = None
-    is_active: Optional[bool] = None
-    is_superuser: Optional[bool] = None
-    company_id: Optional[int] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -44,6 +41,8 @@ class UserCreate(UserBase):
     first_name: str
     last_name: str
     phone: Optional[str] = None
+    is_active: Optional[bool] = None
+    is_superuser: Optional[bool] = None
     company_id: Optional[int] = None
 
     @field_validator("password")
@@ -57,7 +56,13 @@ class UserCreate(UserBase):
 
 
 class UserUpdate(UserBase):
-    pass
+    is_active: Optional[bool] = None
+    is_superuser: Optional[bool] = None
+    company_id: Optional[int] = None
+
+
+class SelfUserUpdate(UserBase):
+    model_config = ConfigDict(extra="forbid")
 
 
 class PasswordUpdate(BaseModel):
@@ -76,12 +81,16 @@ class PasswordUpdate(BaseModel):
 
 class UserResponse(UserBase):
     id: int
+    company_id: Optional[int] = None
     company_name: Optional[str] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
     roles: List[RoleResponse] = Field(default_factory=list)
+    is_active: bool = True
     is_superuser: bool = False
     highest_level: int = 0
+    must_change_password: bool = False
+    password_set_at: Optional[datetime] = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -115,6 +124,7 @@ class UserWithTokens(UserResponse):
 
 class EmployeeResponse(BaseModel):
     id: int
+    email: EmailStr
     first_name: str
     last_name: str
     roles: List[RoleResponse] = Field(default_factory=list)
@@ -143,5 +153,7 @@ class UserInDB(BaseModel):
     is_active: bool
     is_superuser: bool
     highest_level: int = 0
+    must_change_password: bool = False
+    password_set_at: Optional[datetime] = None
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

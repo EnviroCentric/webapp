@@ -611,7 +611,7 @@ async def assign_technician_to_project(
     # Verify the technician exists and has appropriate role level
     async with db.acquire() as conn:
         technician = await conn.fetchrow(
-            "SELECT id, highest_level FROM users WHERE id = $1",
+            "SELECT id, is_superuser FROM users WHERE id = $1",
             technician_id
         )
         if not technician:
@@ -619,10 +619,39 @@ async def assign_technician_to_project(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Technician not found"
             )
-        if technician["highest_level"] < 50:  # Must be at least field tech level
+
+        # Determine target user's effective role from user_roles (source of truth).
+        # Fall back to superuser bypass.
+        can_assign_as_technician = technician["is_superuser"] or await conn.fetchval(
+            """
+            SELECT EXISTS(
+                SELECT 1
+                FROM user_roles ur
+                JOIN roles r ON ur.role_id = r.id
+                WHERE ur.user_id = $1
+                  AND (r.level >= 50 OR r.name IN ('field_tech', 'lab_tech'))
+            )
+            """,
+            technician_id,
+        )
+
+        if not can_assign_as_technician:
+            technician_level = await conn.fetchval(
+                """
+            SELECT COALESCE(MAX(r.level), 0)
+            FROM user_roles ur
+            JOIN roles r ON ur.role_id = r.id
+            WHERE ur.user_id = $1
+            """,
+                technician_id,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User must have technician level or higher to be assigned to projects"
+                detail=(
+                    "User must have the field_tech or lab_tech role, "
+                    f"or technician level or higher, to be assigned to projects. "
+                    f"Current highest level: {technician_level or 0}"
+                )
             )
     
     result = await project_service.assign_technician_to_project(

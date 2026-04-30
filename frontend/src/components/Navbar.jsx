@@ -1,18 +1,20 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { useRoles } from '../context/RolesContext';
 import logo from '../assets/logo.png';
 import Login from '../pages/Login';
-import Register from '../pages/Register';
 
 const navigation = [
-  { name: "Home", href: "/", current: true },
-  { name: "Services", href: "/services", current: false },
-  { name: "Info", href: "/info", current: false },
-  { name: "Dashboard", href: "/dashboard", current: false, requiresTechnician: true },
-  { name: "Projects", href: "/projects", current: false, requiresSupervisor: true }
+  { name: "Home", href: "/" },
+  { name: "Services", href: "/services" },
+  { name: "Info", href: "/info" },
+  { name: "Dashboard", href: "/dashboard", requiresTechnician: true },
+  { name: "Projects", href: "/projects", requiresSupervisor: true },
+  { name: "Companies", href: "/companies", requiresSupervisor: true },
+  { name: "My Company", href: "/company/me", requiresClient: true },
+  { name: "Upload Report", href: "/reports/upload", requiresManager: true },
+  { name: "Admin", href: "/admin", requiresAdmin: true },
 ];
 
 const userMenuOptions = [
@@ -23,12 +25,9 @@ const userMenuOptions = [
 
 export default function Navbar() {
   const { isAuthenticated, logout, user } = useAuth();
-  const { roles } = useRoles();
   const { isDarkMode, toggleTheme } = useTheme();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
-  const [isRegisterOpen, setIsRegisterOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
-  const [changed, setChanged] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const profileMenuRef = useRef(null);
@@ -40,9 +39,11 @@ export default function Navbar() {
   const lastScrollY = useRef(0);
 
   const isHomePage = location.pathname === '/';
-  const isSuperuser = user?.is_superuser || user?.roles?.some(role => role.name.toLowerCase() === 'admin');
-  const userRoleLevel = Math.max(...(user?.roles?.map(role => role.level) || [0]));
-  const isTechnicianOrHigher = userRoleLevel >= 50; // Technician level is 50
+  const userRoles = user?.roles || [];
+  const isSuperuser = user?.is_superuser || userRoles.some(role => (role.name || '').toLowerCase() === 'admin');
+  const userRoleLevel = Math.max(0, ...(userRoles.map(role => role.level || 0)));
+  const hasClientRole = userRoles.some(role => (role.name || '').toLowerCase() === 'client');
+  const isClient = !!(hasClientRole && user?.company_id && userRoleLevel < 100);
 
   const getUserInitials = () => {
     if (!user?.first_name && !user?.last_name) return null;
@@ -52,20 +53,6 @@ export default function Navbar() {
     return `${firstInitial}${lastInitial}`;
   };
 
-  const onNav = () => {
-    for (let nav of navigation) {
-      if (nav.href === location.pathname) {
-        nav.current = true;
-      } else {
-        nav.current = false;
-      }
-    }
-    setChanged(!changed);
-  };
-
-  useEffect(() => {
-    onNav();
-  }, [location.pathname]);
 
   useEffect(() => {
     function handleClickOutside(event) {
@@ -151,15 +138,6 @@ export default function Navbar() {
     toggleTheme();
   };
 
-  const handleSwitchToRegister = () => {
-    setIsLoginOpen(false);
-    setIsRegisterOpen(true);
-  };
-
-  const handleSwitchToLogin = () => {
-    setIsRegisterOpen(false);
-    setIsLoginOpen(true);
-  };
 
   const handleLogout = () => {
     logout();
@@ -196,6 +174,15 @@ export default function Navbar() {
                 <div className="ml-2 flex items-center space-x-4">
                   {navigation
                     .filter(item => {
+                      if (item.requiresClient) {
+                        return isClient;
+                      }
+                      if (item.requiresAdmin) {
+                        return userRoleLevel >= 100 || isSuperuser;
+                      }
+                      if (item.requiresManager) {
+                        return userRoleLevel >= 90;
+                      }
                       if (item.requiresSupervisor) {
                         return userRoleLevel >= 80; // Supervisor level is 80
                       }
@@ -205,17 +192,19 @@ export default function Navbar() {
                       return true;
                     })
                     .map((item) => (
-                      <Link
+                      <NavLink
                         key={item.name}
                         to={item.href}
-                        className={`${
-                          item.current
-                            ? 'bg-gray-900 text-white'
-                            : 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                        } px-3 py-2 rounded-md text-sm font-medium`}
+                        className={({ isActive }) => (
+                          `${
+                            isActive
+                              ? 'bg-gray-900 text-white'
+                              : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                          } px-3 py-2 rounded-md text-sm font-medium`
+                        )}
                       >
                         {item.name}
-                      </Link>
+                      </NavLink>
                     ))}
                 </div>
               </div>
@@ -320,15 +309,9 @@ export default function Navbar() {
         </div>
       </nav>
 
-      <Login 
-        isOpen={isLoginOpen} 
+      <Login
+        isOpen={isLoginOpen}
         onClose={() => setIsLoginOpen(false)}
-        onSwitchToRegister={handleSwitchToRegister}
-      />
-      <Register 
-        isOpen={isRegisterOpen} 
-        onClose={() => setIsRegisterOpen(false)}
-        onSwitchToLogin={handleSwitchToLogin}
       />
     </>
   );

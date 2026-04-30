@@ -1,6 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from app.core.security import create_access_token, create_refresh_token, verify_password, verify_refresh_token, get_current_user
+from app.core.deps import require_admin
 from app.services.users import UserService
 from app.db.session import get_db
 import asyncpg
@@ -26,12 +27,13 @@ class RegisterRequest(UserCreate):
             raise ValueError("Passwords do not match")
         return v
 
-@router.post("/register", response_model=UserWithTokens)
+@router.post("/register", response_model=UserResponse)
 async def register(
     user_in: RegisterRequest,
+    current_user: dict = Depends(require_admin),
     db: asyncpg.Pool = Depends(get_db)
 ):
-    """Register a new user."""
+    """Create a new user account (admin-only)."""
     # Validate email format
     is_valid, error_message = validate_email(user_in.email)
     if not is_valid:
@@ -52,18 +54,7 @@ async def register(
     
     # Create new user
     user = await user_service.create_user(user_in)
-    
-    # Generate tokens
-    access_token = create_access_token(subject=user.email)
-    refresh_token = create_refresh_token(subject=user.email)
-    
-    # Add tokens to response
-    response = user.model_dump()
-    response["access_token"] = access_token
-    response["refresh_token"] = refresh_token
-    response["token_type"] = "bearer"
-    
-    return response
+    return user
 
 @router.post("/login", response_model=TokenResponse)
 async def login(
@@ -138,6 +129,11 @@ async def refresh_token(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Inactive user"
         )
     
     # Generate new tokens

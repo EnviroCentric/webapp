@@ -84,4 +84,10 @@ class RoleService:
                         query_manager.insert_user_role,
                         user_id,
                         role_id
-                    ) 
+                    )
+
+                # Keep denormalized `users.highest_level` in sync with the user's roles
+                await conn.execute(
+                    query_manager.recalc_user_highest_role_level,
+                    user_id,
+                )

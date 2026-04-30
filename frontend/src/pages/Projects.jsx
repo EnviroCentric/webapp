@@ -29,15 +29,16 @@ export default function Projects() {
   useEffect(() => {
     // Redirect technicians to dashboard
     if (!isSupervisorOrHigher) {
-      navigate('/dashboard');
+      navigate('/dashboard', { replace: true });
       return;
     }
+
     fetchProjects();
-    
+
     // Fetch companies for admins
     if (isAdmin) {
       fetchCompanies();
-      
+
       // Check if we have a pre-selected company from navigation state
       const preSelectedCompanyId = location.state?.selectedCompanyId;
       if (preSelectedCompanyId) {
@@ -48,7 +49,7 @@ export default function Projects() {
         navigate(location.pathname, { replace: true, state: {} });
       }
     }
-  }, []);
+  }, [isSupervisorOrHigher, isAdmin, location.pathname, location.state, navigate]);
 
   const fetchProjects = async () => {
     try {

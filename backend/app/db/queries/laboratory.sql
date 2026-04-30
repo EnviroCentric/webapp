@@ -1,7 +1,9 @@
 -- Laboratory workflow queries for environmental sampling
 
 -- Sample management (enhanced version)
--- name: create_sample
+-- NOTE: these query names are prefixed with `lab_` to avoid collisions with
+-- the sampling workflow queries in `samples.sql`.
+-- name: lab_create_sample
 INSERT INTO samples (
     project_id, visit_id, sample_id, sample_type, matrix,
     collection_date, collection_time, collector_name, 
@@ -11,7 +13,7 @@ INSERT INTO samples (
     $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16
 ) RETURNING *;
 
--- name: get_sample
+-- name: lab_get_sample
 SELECT 
     s.*,
     p.name as project_name,
@@ -24,7 +26,7 @@ LEFT JOIN companies c ON p.company_id = c.id
 LEFT JOIN sample_batches sb ON s.batch_id = sb.id
 WHERE s.id = $1;
 
--- name: update_sample
+-- name: lab_update_sample
 UPDATE samples
 SET 
     sample_type = COALESCE($2, sample_type),
@@ -44,7 +46,7 @@ SET
 WHERE id = $1
 RETURNING *;
 
--- name: list_samples
+-- name: lab_list_samples
 SELECT 
     s.*,
     p.name as project_name,
@@ -57,7 +59,7 @@ LEFT JOIN companies c ON p.company_id = c.id
 LEFT JOIN sample_batches sb ON s.batch_id = sb.id
 ORDER BY s.created_at DESC;
 
--- name: get_samples_by_status
+-- name: lab_get_samples_by_status
 SELECT 
     s.*,
     p.name as project_name,
@@ -70,7 +72,7 @@ LEFT JOIN sample_batches sb ON s.batch_id = sb.id
 WHERE s.status = $1
 ORDER BY s.created_at DESC;
 
--- name: get_unassigned_samples
+-- name: lab_get_unassigned_samples
 SELECT 
     s.*,
     p.name as project_name,

@@ -8,18 +8,16 @@ const CompanyDashboard = () => {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Get the highest role level from user's roles
   const userRoleLevel = Math.max(...(user?.roles?.map(role => role.level) || [0]));
   const hasClientRole = user?.roles?.some(role => role.name.toLowerCase() === 'client');
-  const isAdmin = userRoleLevel >= 100; // Admin level is 100
-  const isClient = hasClientRole && user?.company_id && !isAdmin; // Must have Client role, be assigned to a company, and NOT be admin
+  const isAdmin = userRoleLevel >= 100;
+  const isClient = hasClientRole && user?.company_id && !isAdmin;
 
   useEffect(() => {
-    // Redirect users who don't meet client requirements
     if (!isClient) {
       navigate('/dashboard');
       return;
@@ -29,13 +27,11 @@ const CompanyDashboard = () => {
 
   const fetchCompanyData = async () => {
     try {
-      // Fetch company info - for clients, this will return their company
       const companyResponse = await api.get('/api/v1/companies/');
       if (companyResponse.data && companyResponse.data.length > 0) {
-        const userCompany = companyResponse.data[0]; // For clients, backend returns only their company
+        const userCompany = companyResponse.data[0];
         setCompany(userCompany);
-        
-        // Fetch projects for this company
+
         const projectsResponse = await api.get(`/api/v1/companies/${userCompany.id}/projects`);
         setProjects(projectsResponse.data.projects || []);
       }
@@ -82,7 +78,6 @@ const CompanyDashboard = () => {
 
       {company ? (
         <>
-          {/* Company Header */}
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between">
               <div>
@@ -107,10 +102,9 @@ const CompanyDashboard = () => {
             </div>
           </div>
 
-          {/* Projects Section */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Your Projects</h2>
-            
+
             {projects.length === 0 ? (
               <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center">
                 <div className="text-gray-400 mb-4">
@@ -130,8 +124,8 @@ const CompanyDashboard = () => {
                 {projects.map((project) => (
                   <div
                     key={project.id}
-                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 cursor-pointer hover:shadow-lg transition-shadow duration-200"
-                    onClick={() => navigate(`/projects/${project.id}`)}
+                    onClick={() => navigate(`/projects/${project.id}/reports`)}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
@@ -141,7 +135,7 @@ const CompanyDashboard = () => {
                         {project.status}
                       </span>
                     </div>
-                    
+
                     {project.description && (
                       <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
                         {project.description}
@@ -165,18 +159,19 @@ const CompanyDashboard = () => {
                           <span>{formatDate(project.current_end_date)}</span>
                         </div>
                       )}
-                      {project.visit_count !== undefined && (
-                        <div className="flex justify-between">
-                          <span>Site Visits:</span>
-                          <span>{project.visit_count}</span>
-                        </div>
-                      )}
-                      {project.sample_count !== undefined && (
-                        <div className="flex justify-between">
-                          <span>Samples:</span>
-                          <span>{project.sample_count}</span>
-                        </div>
-                      )}
+                    </div>
+
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/projects/${project.id}/reports`);
+                        }}
+                        className="w-full px-3 py-2 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        View Reports
+                      </button>
                     </div>
                   </div>
                 ))}

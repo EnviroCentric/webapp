@@ -33,7 +33,7 @@ class LabService:
         """Create a new sample."""
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
-                query_manager.create_sample,
+                query_manager.lab_create_sample,
                 sample_in.project_id,
                 sample_in.visit_id,
                 sample_in.sample_id,
@@ -57,7 +57,7 @@ class LabService:
         """Get a sample by ID with related data."""
         async with self.pool.acquire() as conn:
             row = await conn.fetchrow(
-                query_manager.get_sample,
+                query_manager.lab_get_sample,
                 sample_id
             )
             return SampleResponse(**dict(row)) if row else None
@@ -68,7 +68,7 @@ class LabService:
             update_data = sample_in.model_dump(exclude_unset=True)
             
             row = await conn.fetchrow(
-                query_manager.update_sample,
+                query_manager.lab_update_sample,
                 sample_id,
                 update_data.get('sample_type'),
                 update_data.get('matrix'),
@@ -89,14 +89,14 @@ class LabService:
     async def list_samples(self) -> List[SampleResponse]:
         """List all samples."""
         async with self.pool.acquire() as conn:
-            rows = await conn.fetch(query_manager.list_samples)
+            rows = await conn.fetch(query_manager.lab_list_samples)
             return [SampleResponse(**dict(row)) for row in rows]
 
     async def get_samples_by_status(self, status: SampleStatus) -> List[SampleResponse]:
         """Get samples by status."""
         async with self.pool.acquire() as conn:
             rows = await conn.fetch(
-                query_manager.get_samples_by_status,
+                query_manager.lab_get_samples_by_status,
                 status.value
             )
             return [SampleResponse(**dict(row)) for row in rows]
@@ -104,7 +104,7 @@ class LabService:
     async def get_unassigned_samples(self) -> List[SampleResponse]:
         """Get samples not assigned to any batch."""
         async with self.pool.acquire() as conn:
-            rows = await conn.fetch(query_manager.get_unassigned_samples)
+            rows = await conn.fetch(query_manager.lab_get_unassigned_samples)
             return [SampleResponse(**dict(row)) for row in rows]
 
     # Sample Batch management
