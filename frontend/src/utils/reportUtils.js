@@ -5,6 +5,27 @@ export const getStreetOnly = (formattedAddress) => {
   return String(formattedAddress).split(',')[0].trim();
 };
 
+export const hasStreetNumber = (value) => {
+  return /^\s*\d+[A-Za-z]?\b/.test(String(value || ''));
+};
+
+export const normalizeReportAddress = (address = {}) => {
+  const formattedAddress = String(address?.formatted_address || '').trim();
+  const addressLine1 = String(address?.address_line1 || '').trim();
+  const street = getStreetOnly(formattedAddress);
+
+  if (addressLine1 && hasStreetNumber(addressLine1) && !hasStreetNumber(street)) {
+    const rest = formattedAddress
+      .split(',')
+      .slice(1)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    return [addressLine1, ...rest].join(', ');
+  }
+
+  return formattedAddress;
+};
+
 export const formatShortDate = (dateString) => {
   if (!dateString) return '';
 

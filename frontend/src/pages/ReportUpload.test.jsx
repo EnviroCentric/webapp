@@ -9,6 +9,7 @@ import ReportUpload from './ReportUpload';
 const mockNavigate = vi.fn();
 const apiGet = vi.fn();
 const apiPost = vi.fn();
+let mockAddressData;
 const mockManagerUser = {
   roles: [{ name: 'manager', level: 90 }],
   is_superuser: false,
@@ -48,12 +49,7 @@ vi.mock('../components/AddressInput', () => {
         <button
           type="button"
           data-testid="address-input"
-          onClick={() => onChange({
-            formatted_address: '123 Main St, Testville, TX 00000',
-            google_place_id: 'place-123',
-            latitude: 1.23,
-            longitude: 4.56,
-          })}
+          onClick={() => onChange(mockAddressData)}
         >
           Set address
         </button>
@@ -77,6 +73,13 @@ describe('ReportUpload', () => {
     mockNavigate.mockReset();
     apiGet.mockReset();
     apiPost.mockReset();
+    mockAddressData = {
+      formatted_address: '123 Main St, Testville, TX 00000',
+      address_line1: '123 Main St',
+      google_place_id: 'place-123',
+      latitude: 1.23,
+      longitude: 4.56,
+    };
 
     apiGet.mockImplementation((url, config) => {
       if (url === '/api/v1/companies/') {
@@ -232,6 +235,58 @@ describe('ReportUpload', () => {
     const formData = apiPost.mock.calls[0][1];
     expect(formData.get('technician_user_id')).toBeNull();
     expect(formData.get('technician_name')).toBe('Outside Person');
+  });
+
+  it('preserves the street number when Google formatted address omits it', async () => {
+    const user = userEvent.setup();
+    mockAddressData = {
+      formatted_address: 'Main St, Testville, TX 00000',
+      address_line1: '123 Main St',
+      google_place_id: 'place-123',
+      latitude: 1.23,
+      longitude: 4.56,
+    };
+
+    renderUpload('/reports/upload?projectId=123');
+
+    await screen.findByDisplayValue('Project 123');
+    await user.selectOptions(screen.getByDisplayValue('Select A Type...'), ['area']);
+    fireEvent.change(document.querySelector('input[type="date"]'), { target: { value: '2026-02-24' } });
+
+    const file = new File(['%PDF-1.4 test'], 'report.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText('PDF File'), file);
+    await user.click(screen.getByTestId('address-input'));
+    await user.click(screen.getByRole('button', { name: /^upload$/i }));
+
+    await waitFor(() => expect(apiPost).toHaveBeenCalledTimes(1));
+
+    const formData = apiPost.mock.calls[0][1];
+    expect(formData.get('formatted_address')).toBe('123 Main St, Testville, TX 00000');
+  });
+
+  it('rejects route-only addresses without a street number', async () => {
+    const user = userEvent.setup();
+    mockAddressData = {
+      formatted_address: 'Main St, Testville, TX 00000',
+      address_line1: 'Main St',
+      google_place_id: 'place-123',
+      latitude: 1.23,
+      longitude: 4.56,
+    };
+
+    renderUpload('/reports/upload?projectId=123');
+
+    await screen.findByDisplayValue('Project 123');
+    await user.selectOptions(screen.getByDisplayValue('Select A Type...'), ['area']);
+    fireEvent.change(document.querySelector('input[type="date"]'), { target: { value: '2026-02-24' } });
+
+    const file = new File(['%PDF-1.4 test'], 'report.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText('PDF File'), file);
+    await user.click(screen.getByTestId('address-input'));
+    await user.click(screen.getByRole('button', { name: /^upload$/i }));
+
+    expect(await screen.findByText(/location must include a street number/i)).toBeInTheDocument();
+    expect(apiPost).not.toHaveBeenCalled();
   });
 
   it('shows selected filename in the PDF upload bubble', async () => {

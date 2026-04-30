@@ -4,6 +4,7 @@ import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import AddressInput from '../components/AddressInput';
 import { formatPersonName, toTitleCase } from '../utils/textUtils';
+import { hasStreetNumber, normalizeReportAddress } from '../utils/reportUtils';
 
 const REPORT_KINDS = [
   { value: 'personal', label: 'Personal' },
@@ -299,8 +300,15 @@ export default function ReportUpload() {
       return;
     }
 
-    if (!address?.google_place_id || !address?.formatted_address) {
+    const formattedAddress = normalizeReportAddress(address);
+
+    if (!address?.google_place_id || !formattedAddress) {
       setError('Location is required (select an address from Google Places)');
+      return;
+    }
+
+    if (!hasStreetNumber(formattedAddress)) {
+      setError('Location must include a street number. Select a full street address from Google Places.');
       return;
     }
 
@@ -359,7 +367,7 @@ export default function ReportUpload() {
       data.append('project_id', String(selectedProjectId));
       data.append('report_kind', reportKind);
       data.append('report_date', reportDate);
-      data.append('formatted_address', address.formatted_address);
+      data.append('formatted_address', formattedAddress);
       data.append('google_place_id', address.google_place_id);
       if (address.latitude != null) data.append('latitude', String(address.latitude));
       if (address.longitude != null) data.append('longitude', String(address.longitude));
