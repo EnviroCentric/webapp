@@ -30,6 +30,7 @@ export default function ReportUpload() {
 
   const [reportDate, setReportDate] = useState('');
   const [address, setAddress] = useState({});
+  const [streetNumber, setStreetNumber] = useState('');
   const [locationLabel, setLocationLabel] = useState('');
   const [locationOptions, setLocationOptions] = useState([]);
   const [workerName, setWorkerName] = useState('');
@@ -180,6 +181,7 @@ export default function ReportUpload() {
     // Reset downstream fields when project or report kind changes.
     setReportDate('');
     setAddress({});
+    setStreetNumber('');
     setLocationLabel('');
     setLocationOptions([]);
     setWorkerName('');
@@ -190,6 +192,12 @@ export default function ReportUpload() {
     setNotes('');
     setFile(null);
   }, [selectedProjectId, reportKind]);
+
+  useEffect(() => {
+    if (hasStreetNumber(normalizeReportAddress(address))) {
+      setStreetNumber('');
+    }
+  }, [address]);
 
   useEffect(() => {
     const loadTechnicians = async () => {
@@ -300,7 +308,7 @@ export default function ReportUpload() {
       return;
     }
 
-    const formattedAddress = normalizeReportAddress(address);
+    const formattedAddress = normalizeReportAddress(address, streetNumber);
 
     if (!address?.google_place_id || !formattedAddress) {
       setError('Location is required (select an address from Google Places)');
@@ -308,7 +316,7 @@ export default function ReportUpload() {
     }
 
     if (!hasStreetNumber(formattedAddress)) {
-      setError('Location must include a street number. Select a full street address from Google Places.');
+      setError('Street number is required for this Google address.');
       return;
     }
 
@@ -386,6 +394,7 @@ export default function ReportUpload() {
       // Keep the selections but clear form content so the user can upload another.
       setReportDate('');
       setAddress({});
+      setStreetNumber('');
       setLocationLabel('');
       setWorkerName('');
       setTechnicianName('');
@@ -588,6 +597,25 @@ export default function ReportUpload() {
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 Pick the address from Google Places (manual entry will not work for uploads).
               </div>
+              {address?.google_place_id && !hasStreetNumber(normalizeReportAddress(address)) && (
+                <div className="mt-3">
+                  <label htmlFor="report-street-number" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Street Number
+                  </label>
+                  <input
+                    id="report-street-number"
+                    type="text"
+                    inputMode="numeric"
+                    value={streetNumber}
+                    onChange={(e) => setStreetNumber(e.target.value)}
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    placeholder="Enter street number"
+                  />
+                  <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Google returned the street name without the number. Enter the number shown in the suggestion.
+                  </div>
+                </div>
+              )}
             </div>
 
             <div>

@@ -264,7 +264,7 @@ describe('ReportUpload', () => {
     expect(formData.get('formatted_address')).toBe('123 Main St, Testville, TX 00000');
   });
 
-  it('rejects route-only addresses without a street number', async () => {
+  it('shows a street number input for route-only addresses and submits the corrected address', async () => {
     const user = userEvent.setup();
     mockAddressData = {
       formatted_address: 'Main St, Testville, TX 00000',
@@ -283,9 +283,38 @@ describe('ReportUpload', () => {
     const file = new File(['%PDF-1.4 test'], 'report.pdf', { type: 'application/pdf' });
     await user.upload(screen.getByLabelText('PDF File'), file);
     await user.click(screen.getByTestId('address-input'));
+    await user.type(await screen.findByLabelText(/street number/i), '123');
     await user.click(screen.getByRole('button', { name: /^upload$/i }));
 
-    expect(await screen.findByText(/location must include a street number/i)).toBeInTheDocument();
+    await waitFor(() => expect(apiPost).toHaveBeenCalledTimes(1));
+
+    const formData = apiPost.mock.calls[0][1];
+    expect(formData.get('formatted_address')).toBe('123 Main St, Testville, TX 00000');
+  });
+
+  it('requires the supplemental street number before submitting route-only addresses', async () => {
+    const user = userEvent.setup();
+    mockAddressData = {
+      formatted_address: 'Main St, Testville, TX 00000',
+      address_line1: 'Main St',
+      google_place_id: 'place-123',
+      latitude: 1.23,
+      longitude: 4.56,
+    };
+
+    renderUpload('/reports/upload?projectId=123');
+
+    await screen.findByDisplayValue('Project 123');
+    await user.selectOptions(screen.getByDisplayValue('Select A Type...'), ['area']);
+    fireEvent.change(document.querySelector('input[type="date"]'), { target: { value: '2026-02-24' } });
+
+    const file = new File(['%PDF-1.4 test'], 'report.pdf', { type: 'application/pdf' });
+    await user.upload(screen.getByLabelText('PDF File'), file);
+    await user.click(screen.getByTestId('address-input'));
+    expect(await screen.findByLabelText(/street number/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^upload$/i }));
+
+    expect(await screen.findByText(/street number is required/i)).toBeInTheDocument();
     expect(apiPost).not.toHaveBeenCalled();
   });
 

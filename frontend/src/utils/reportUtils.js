@@ -9,10 +9,11 @@ export const hasStreetNumber = (value) => {
   return /^\s*\d+[A-Za-z]?\b/.test(String(value || ''));
 };
 
-export const normalizeReportAddress = (address = {}) => {
+export const normalizeReportAddress = (address = {}, streetNumber = '') => {
   const formattedAddress = String(address?.formatted_address || '').trim();
   const addressLine1 = String(address?.address_line1 || '').trim();
   const street = getStreetOnly(formattedAddress);
+  const manualStreetNumber = String(streetNumber || '').trim();
 
   if (addressLine1 && hasStreetNumber(addressLine1) && !hasStreetNumber(street)) {
     const rest = formattedAddress
@@ -21,6 +22,15 @@ export const normalizeReportAddress = (address = {}) => {
       .map((part) => part.trim())
       .filter(Boolean);
     return [addressLine1, ...rest].join(', ');
+  }
+
+  if (manualStreetNumber && street && !hasStreetNumber(street)) {
+    const rest = formattedAddress
+      .split(',')
+      .slice(1)
+      .map((part) => part.trim())
+      .filter(Boolean);
+    return [`${manualStreetNumber} ${street}`, ...rest].join(', ');
   }
 
   return formattedAddress;
