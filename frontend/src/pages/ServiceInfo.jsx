@@ -1,8 +1,10 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 export default function ServiceInfo() {
   const location = useLocation();
+  const [activeServiceId, setActiveServiceId] = useState('asbestos');
+  const isProgrammaticScrollRef = useRef(false);
 
   // Scroll to section based on hash in URL
   useEffect(() => {
@@ -11,15 +13,55 @@ export default function ServiceInfo() {
       if (element) {
         // Add a small delay to ensure page is fully rendered
         setTimeout(() => {
-          element.scrollIntoView({ 
-            behavior: 'smooth', 
+          element.scrollIntoView({
+            behavior: 'smooth',
             block: 'start',
-            inline: 'nearest'
+            inline: 'nearest',
           });
         }, 100);
       }
     }
   }, [location]);
+
+  // Track which service section is currently in view so we can highlight/enlarge that dot
+  useEffect(() => {
+    const sectionIds = ['asbestos', 'lead', 'microbial', 'hazardous-waste'];
+    const sections = sectionIds
+      .map((id) => document.getElementById(id))
+      .filter(Boolean);
+
+    if (!sections.length || typeof IntersectionObserver === 'undefined') {
+      return undefined;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (isProgrammaticScrollRef.current) {
+          // Ignore intersection updates triggered by our own smooth scroll
+          return;
+        }
+
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+
+        if (visible[0]?.target?.id) {
+          setActiveServiceId(visible[0].target.id);
+        }
+      },
+      {
+        threshold: [0.3, 0.5, 0.7],
+        rootMargin: '-20% 0px -40% 0px',
+      }
+    );
+
+    sections.forEach((section) => observer.observe(section));
+
+    return () => {
+      sections.forEach((section) => observer.unobserve(section));
+      observer.disconnect();
+    };
+  }, []);
 
   const services = [
     {
@@ -257,79 +299,148 @@ export default function ServiceInfo() {
         </div>
       </div>
 
-      {/* Services Sections */}
+      {/* Services Sections with vertical scroll navigation */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        {services.map((service, index) => (
-          <section
-            key={service.id}
-            id={service.id}
-            className={`${index > 0 ? 'mt-20' : ''} scroll-mt-20`}
-          >
-            {/* Service Header */}
-            <div className="text-center mb-12">
-              <div className="flex justify-center mb-6">
-                {service.icon}
-              </div>
-              <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
-                {service.title}
-              </h2>
-              <h3 className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-6">
-                {service.subtitle}
-              </h3>
-              <p className="text-lg text-gray-700 dark:text-gray-300 max-w-4xl mx-auto">
-                {service.description}
-              </p>
-            </div>
+        <div className="relative flex gap-8 md:gap-16">
+          {/* Left: sticky vertical line + dots nav (hidden on very small screens) */}
+          <div className="hidden md:flex flex-col fixed left-6 top-100 bottom-40 items-center pointer-events-none">
+            {/* Vertically centered within the services band */}
+            <div className="flex flex-col items-end pointer-events-auto">
+              <div className="relative h-[260px] lg:h-[320px] flex flex-col items-center">
+                {/* Vertical line centered on circles */}
+                <div className="pointer-events-none absolute left-3 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
 
-            {/* Service Details Grid */}
-            <div className={`grid gap-8 items-center ${
-              service.services.length === 3 
-                ? 'lg:grid-cols-[1fr_minmax(400px,550px)] lg:grid-rows-2 lg:[&>*:first-child]:row-span-2'
-                : 'grid-cols-1 lg:grid-cols-2'
-            }`}>
-              {service.services.map((subService) => (
+                {/* Dots + labels */}
+                <div className="flex flex-col justify-between h-full py-2 space-y-3">
+                  {services.map((service) => {
+                    const isActive = activeServiceId === service.id;
+
+                    return (
+                      <button
+                        key={service.id}
+                        type="button"
+                        onClick={() => {
+                          const el = document.getElementById(service.id);
+                          if (el) {
+                            isProgrammaticScrollRef.current = true;
+                            el.scrollIntoView({
+                              behavior: 'smooth',
+                              block: 'center',
+                              inline: 'nearest',
+                            });
+                            // Re-enable observer reactions shortly after the scroll finishes
+                            setTimeout(() => {
+                              isProgrammaticScrollRef.current = false;
+                            }, 700);
+                          }
+                          setActiveServiceId(service.id);
+                        }}
+                        className="relative flex items-center gap-3 group focus:outline-none text-left"
+                        aria-label={service.title}
+                      >
+                        {/* Fixed-size circle container so center stays on the line */}
+                        <span className="relative flex items-center justify-center w-6 h-6">
+                          <span
+                            className={`transition-transform transition-colors duration-300 rounded-full border-2 w-3 h-3 ${
+                              isActive
+                                ? 'scale-125 border-blue-600 bg-blue-600/10 dark:border-blue-400 dark:bg-blue-400/20'
+                                : 'scale-100 border-gray-400 bg-white dark:bg-gray-900 dark:border-gray-500 group-hover:border-blue-400'
+                            }`}
+                          />
+                        </span>
+                        {/* Label to the right; does not affect circle alignment */}
+                        <span
+                          className={`font-medium tracking-wide transition-all duration-300 ${
+                            isActive
+                              ? 'text-lg text-blue-700 dark:text-blue-300'
+                              : 'text-sm text-gray-600 dark:text-gray-300 group-hover:text-blue-500'
+                          }`}
+                        >
+                          {service.title}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+            </div>
+          </div>
+          </div>
+
+          {/* Right: service content */}
+          <div className="flex-1 md:ml-24">
+            {services.map((service, index) => (
+              <section
+                key={service.id}
+                id={service.id}
+                className={`${index > 0 ? 'mt-20' : ''} scroll-mt-32`}
+              >
+                {/* Service Header */}
+                <div className="text-center mb-12">
+                  <div className="flex justify-center mb-6">
+                    {service.icon}
+                  </div>
+                  <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+                    {service.title}
+                  </h2>
+                  <h3 className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-6">
+                    {service.subtitle}
+                  </h3>
+                  <p className="text-lg text-gray-700 dark:text-gray-300 max-w-4xl mx-auto">
+                    {service.description}
+                  </p>
+                </div>
+
+                {/* Service Details Grid */}
                 <div
-                  key={subService.name}
-                  className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 ${
-                    service.services.length === 3 ? 'h-fit' : 'h-full'
+                  className={`grid gap-8 ${
+                    service.services.length === 3
+                      ? 'lg:grid-cols-[1fr_minmax(400px,550px)] lg:grid-rows-2 lg:[&>*:first-child]:row-span-2 lg:[&>*:first-child]:self-center'
+                      : 'grid-cols-1 lg:grid-cols-2'
                   }`}
                 >
-                  <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
-                    {subService.name}
-                  </h4>
-                  <p className="text-gray-600 dark:text-gray-300 mb-6">
-                    {subService.description}
-                  </p>
-                  <ul className="space-y-2">
-                    {subService.details.map((detail, detailIndex) => (
-                      <li key={detailIndex} className="flex items-start">
-                        <svg
-                          className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0"
-                          fill="currentColor"
-                          viewBox="0 0 20 20"
-                        >
-                          <path
-                            fillRule="evenodd"
-                            d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                            clipRule="evenodd"
-                          />
-                        </svg>
-                        <span className="text-gray-600 dark:text-gray-300">
-                          {detail}
-                        </span>
-                      </li>
-                    ))}
-                  </ul>
+                  {service.services.map((subService) => (
+                    <div
+                      key={subService.name}
+                      className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 h-fit"
+                    >
+                      <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
+                        {subService.name}
+                      </h4>
+                      <p className="text-gray-600 dark:text-gray-300 mb-6">
+                        {subService.description}
+                      </p>
+                      <ul className="space-y-2">
+                        {subService.details.map((detail, detailIndex) => (
+                          <li key={detailIndex} className="flex items-start">
+                            <svg
+                              className="w-5 h-5 text-green-500 mr-2 mt-0.5 flex-shrink-0"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                            <span className="text-gray-600 dark:text-gray-300">
+                              {detail}
+                            </span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
 
-            {/* Divider */}
-            {index < services.length - 1 && (
-              <div className="mt-16 border-b border-gray-200 dark:border-gray-700"></div>
-            )}
-          </section>
-        ))}
+                {/* Divider */}
+                {index < services.length - 1 && (
+                  <div className="mt-16 border-b border-gray-200 dark:border-gray-700" />
+                )}
+              </section>
+            ))}
+          </div>
+        </div>
       </div>
 
       {/* Call to Action */}
