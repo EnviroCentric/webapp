@@ -3,6 +3,43 @@
 /* ✅ Enable dark mode via the .dark class */
 @custom-variant dark (&:where(.dark, .dark *));
 
+@layer base {
+  /* Light mode - lighter grey background */
+  body:not(.dark),
+  html:not(.dark) {
+    background-color: #d1d5db; /* gray-300 - main background */
+  }
+}
+
+@layer components {
+  /* Light mode panels - slightly lighter than background */
+  html:not(.dark) .bg-white {
+    background-color: #e5e7eb !important; /* gray-200 - light panels */
+  }
+
+  /* Gray-50 sections in light mode */
+  html:not(.dark) .bg-gray-50 {
+    background-color: #f3f4f6 !important; /* gray-100 */
+  }
+
+  /* Black text in light mode */
+  html:not(.dark) .text-gray-900 {
+    color: #111827 !important; /* gray-900 - black text */
+  }
+
+  html:not(.dark) .text-gray-700 {
+    color: #374151 !important; /* gray-700 - dark grey text */
+  }
+
+  html:not(.dark) .text-gray-600 {
+    color: #4b5563 !important; /* gray-600 - medium grey text */
+  }
+
+  html:not(.dark) .text-gray-300 {
+    color: #1f2937 !important; /* gray-800 - dark text for links */
+  }
+}
+
 /* Performance optimizations for smooth animations */
 .will-change-transform {
   will-change: transform, opacity;
@@ -27,7 +64,7 @@ html {
     transform: none !important;
     transition: none !important;
   }
-  
+
   * {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;

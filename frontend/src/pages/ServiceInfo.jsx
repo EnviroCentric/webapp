@@ -176,11 +176,64 @@ export default function ServiceInfo() {
           ]
         }
       ]
+    },
+    {
+      id: 'hazardous-waste',
+      title: 'Hazardous Waste Services',
+      subtitle: 'Hazardous Materials Management & Compliance',
+      description: 'Professional hazardous waste assessment, testing, and disposal consultation services.',
+      icon: (
+        <svg className="w-16 h-16 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      ),
+      services: [
+        {
+          name: 'Hazardous Waste Assessments',
+          description: 'Comprehensive evaluation and characterization of potentially hazardous materials.',
+          details: [
+            'Material identification and classification',
+            'Hazardous waste determination',
+            'Generator status evaluation',
+            'Regulatory compliance assessment'
+          ]
+        },
+        {
+          name: 'Waste Testing & Analysis',
+          description: 'Laboratory testing and analysis to determine waste characteristics and proper disposal methods.',
+          details: [
+            'TCLP testing for heavy metals',
+            'Ignitability and reactivity testing',
+            'Paint filter test',
+            'Chemical composition analysis'
+          ]
+        },
+        {
+          name: 'Disposal Consultation',
+          description: 'Expert guidance on proper disposal methods and regulatory requirements.',
+          details: [
+            'Disposal option recommendations',
+            'Waste manifesting assistance',
+            'Transportation requirements',
+            'Cost-effective disposal solutions'
+          ]
+        },
+        {
+          name: 'Regulatory Compliance',
+          description: 'Ensure compliance with federal and state hazardous waste regulations.',
+          details: [
+            'RCRA compliance guidance',
+            'Waste accumulation requirements',
+            'Training and documentation support',
+            'Reporting and recordkeeping assistance'
+          ]
+        }
+      ]
     }
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-gray-900 pt-16">
+    <div className="min-h-screen bg-gray-300 dark:bg-gray-900 pt-16">
       {/* Hero Section */}
       <div
         className="relative text-white"
@@ -229,15 +282,17 @@ export default function ServiceInfo() {
             </div>
 
             {/* Service Details Grid */}
-            <div className={`grid gap-8 ${
+            <div className={`grid gap-8 items-center ${
               service.services.length === 3 
-                ? 'lg:grid-cols-[1fr_minmax(400px,550px)] lg:grid-rows-2 lg:[&>*:first-child]:row-span-2 lg:[&>*:first-child]:self-center'
+                ? 'lg:grid-cols-[1fr_minmax(400px,550px)] lg:grid-rows-2 lg:[&>*:first-child]:row-span-2'
                 : 'grid-cols-1 lg:grid-cols-2'
             }`}>
               {service.services.map((subService) => (
                 <div
                   key={subService.name}
-                  className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 h-fit"
+                  className={`bg-white dark:bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:shadow-xl transition-shadow duration-300 ${
+                    service.services.length === 3 ? 'h-fit' : 'h-full'
+                  }`}
                 >
                   <h4 className="text-xl font-bold text-gray-900 dark:text-white mb-4">
                     {subService.name}

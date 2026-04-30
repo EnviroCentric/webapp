@@ -28,15 +28,10 @@ export default function Navbar() {
   const { isDarkMode, toggleTheme } = useTheme();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const profileMenuRef = useRef(null);
-  const [navbarStyle, setNavbarStyle] = useState({
-    opacity: 0,
-    transform: 'translate(0, 0)',
-  });
-  const animationFrameRef = useRef();
-  const lastScrollY = useRef(0);
 
   const isHomePage = location.pathname === '/';
   const userRoles = user?.roles || [];
@@ -47,7 +42,7 @@ export default function Navbar() {
 
   const getUserInitials = () => {
     if (!user?.first_name && !user?.last_name) return null;
-    
+
     const firstInitial = user.first_name ? user.first_name[0].toUpperCase() : '';
     const lastInitial = user.last_name ? user.last_name[0].toUpperCase() : '';
     return `${firstInitial}${lastInitial}`;
@@ -66,73 +61,6 @@ export default function Navbar() {
     };
   }, []);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      // Cancel the previous animation frame if it exists
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-
-      animationFrameRef.current = requestAnimationFrame(() => {
-        if (isHomePage) {
-          const scrollPosition = window.scrollY;
-          
-          // Only update if scroll position changed significantly
-          if (Math.abs(scrollPosition - lastScrollY.current) < 3) return;
-          lastScrollY.current = scrollPosition;
-          
-          const maxScroll = Math.min(300, window.innerHeight * 0.45); // Match reduced logo section
-          
-          const progress = Math.min(1, scrollPosition / maxScroll);
-          // Start appearing when progress is > 0.65 (65% scrolled) for smoother transition
-          const adjustedProgress = Math.max(0, (progress - 0.65) / 0.35);
-          const opacity = Math.min(1, adjustedProgress * 1.2);
-
-          setNavbarStyle({
-            opacity,
-            transform: 'translate3d(0, 0, 0)',
-          });
-        } else {
-          // Always show logo on non-home pages
-          setNavbarStyle({
-            opacity: 1,
-            transform: 'translate3d(0, 0, 0)',
-          });
-        }
-      });
-    };
-
-    // Throttled scroll handler for better performance
-    let ticking = false;
-    const scrollHandler = () => {
-      if (!ticking) {
-        requestAnimationFrame(() => {
-          handleScroll();
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener('scroll', scrollHandler, { passive: true });
-    
-    // Handle resize for responsive behavior
-    const handleResize = () => {
-      handleScroll(); // Recalculate on resize
-    };
-    window.addEventListener('resize', handleResize, { passive: true });
-    
-    // Set initial state
-    handleScroll();
-    
-    return () => {
-      window.removeEventListener('scroll', scrollHandler);
-      window.removeEventListener('resize', handleResize);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [isHomePage]);
 
   const handleThemeToggle = () => {
     toggleTheme();
@@ -152,22 +80,36 @@ export default function Navbar() {
           <div className="flex items-center justify-between h-16">
             {/* Logo and Navigation Links */}
             <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <Link to="/" className="flex items-center">
-                  <img 
-                    src={logo} 
-                    alt="Enviro-Centric Logo" 
-                    className="h-8 sm:h-10 md:h-12 w-auto will-change-transform"
-                    style={{
-                      ...navbarStyle,
-                      transition: 'opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
-                      backfaceVisibility: 'hidden',
-                    }}
-                    loading="eager"
-                    decoding="async"
-                  />
-                </Link>
-              </div>
+              {/* Mobile menu button - left side */}
+              <button
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="md:hidden p-2 rounded-lg text-gray-900 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 mr-3"
+                aria-label="Toggle mobile menu"
+              >
+                {isMobileMenuOpen ? (
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
+
+              {!isHomePage && (
+                <div className="flex-shrink-0">
+                  <Link to="/" className="flex items-center">
+                    <img
+                      src={logo}
+                      alt="Enviro-Centric Logo"
+                      className="h-8 sm:h-10 md:h-12 w-auto"
+                      loading="eager"
+                      decoding="async"
+                    />
+                  </Link>
+                </div>
+              )}
 
               {/* Navigation Links */}
               <div className="hidden md:block">
@@ -198,8 +140,8 @@ export default function Navbar() {
                         className={({ isActive }) => (
                           `${
                             isActive
-                              ? 'bg-gray-900 text-white'
-                              : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                              ? 'bg-gray-900 text-white dark:bg-gray-900 dark:text-white'
+                              : 'text-gray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700 hover:text-black dark:hover:text-white'
                           } px-3 py-2 rounded-md text-sm font-medium`
                         )}
                       >
@@ -214,7 +156,7 @@ export default function Navbar() {
             <div className="flex items-center space-x-4">
               <button
                 onClick={handleThemeToggle}
-                className="p-2 rounded-lg text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700"
+                className="p-2 rounded-lg text-gray-900 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700"
                 aria-label="Toggle dark mode"
               >
                 {isDarkMode ? (
@@ -232,7 +174,7 @@ export default function Navbar() {
                 <div className="relative" ref={profileMenuRef}>
                   <button
                     onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
-                    className="p-2 rounded-full text-gray-500 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700 focus:outline-none"
+                    className="p-2 rounded-full text-gray-900 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-700 focus:outline-none"
                   >
                     {getUserInitials() ? (
                       <div className="w-6 h-6 flex items-center justify-center bg-blue-600 text-white rounded-full text-sm font-medium">
@@ -307,6 +249,49 @@ export default function Navbar() {
             </div>
           </div>
         </div>
+
+        {/* Mobile menu dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+            <div className="px-2 pt-2 pb-3 space-y-1">
+              {navigation
+                .filter(item => {
+                  if (item.requiresClient) {
+                    return isClient;
+                  }
+                  if (item.requiresAdmin) {
+                    return userRoleLevel >= 100 || isSuperuser;
+                  }
+                  if (item.requiresManager) {
+                    return userRoleLevel >= 90;
+                  }
+                  if (item.requiresSupervisor) {
+                    return userRoleLevel >= 80;
+                  }
+                  if (item.requiresTechnician) {
+                    return userRoleLevel >= 50;
+                  }
+                  return true;
+                })
+                .map((item) => (
+                  <NavLink
+                    key={item.name}
+                    to={item.href}
+                    onClick={() => setIsMobileMenuOpen(false)}
+                    className={({ isActive }) => (
+                      `${
+                        isActive
+                          ? 'bg-gray-900 text-white dark:bg-gray-900 dark:text-white'
+                          : 'text-gray-900 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
+                      } block px-3 py-2 rounded-md text-base font-medium`
+                    )}
+                  >
+                    {item.name}
+                  </NavLink>
+                ))}
+            </div>
+          </div>
+        )}
       </nav>
 
       <Login
