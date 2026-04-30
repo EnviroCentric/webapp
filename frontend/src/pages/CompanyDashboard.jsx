@@ -6,22 +6,18 @@ import api from '../services/api';
 const CompanyDashboard = () => {
   const [company, setCompany] = useState(null);
   const [projects, setProjects] = useState([]);
-  const [reportsByProject, setReportsByProject] = useState({});
-  const [downloadingReportId, setDownloadingReportId] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
+
   const { user } = useAuth();
   const navigate = useNavigate();
 
-  // Get the highest role level from user's roles
   const userRoleLevel = Math.max(...(user?.roles?.map(role => role.level) || [0]));
   const hasClientRole = user?.roles?.some(role => role.name.toLowerCase() === 'client');
-  const isAdmin = userRoleLevel >= 100; // Admin level is 100
-  const isClient = hasClientRole && user?.company_id && !isAdmin; // Must have Client role, be assigned to a company, and NOT be admin
+  const isAdmin = userRoleLevel >= 100;
+  const isClient = hasClientRole && user?.company_id && !isAdmin;
 
   useEffect(() => {
-    // Redirect users who don't meet client requirements
     if (!isClient) {
       navigate('/dashboard');
       return;
@@ -31,27 +27,13 @@ const CompanyDashboard = () => {
 
   const fetchCompanyData = async () => {
     try {
-      // Fetch company info - for clients, this will return their company
       const companyResponse = await api.get('/api/v1/companies/');
       if (companyResponse.data && companyResponse.data.length > 0) {
-        const userCompany = companyResponse.data[0]; // For clients, backend returns only their company
+        const userCompany = companyResponse.data[0];
         setCompany(userCompany);
 
-        // Fetch projects for this company
         const projectsResponse = await api.get(`/api/v1/companies/${userCompany.id}/projects`);
-        const companyProjects = projectsResponse.data.projects || [];
-        setProjects(companyProjects);
-
-        // Fetch client-visible, final reports for this company and group by project.
-        const reportsResponse = await api.get('/api/v1/reports/client/reports');
-        const reports = reportsResponse.data || [];
-        const byProject = {};
-        for (const r of reports) {
-          const pid = r.project_id;
-          if (!byProject[pid]) byProject[pid] = [];
-          byProject[pid].push(r);
-        }
-        setReportsByProject(byProject);
+        setProjects(projectsResponse.data.projects || []);
       }
     } catch (err) {
       setError('Failed to fetch company data');
@@ -63,33 +45,6 @@ const CompanyDashboard = () => {
 
   const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString();
-  };
-
-  const downloadReport = async (report) => {
-    try {
-      setDownloadingReportId(report.id);
-      const response = await api.get(`/api/v1/reports/${report.id}/download`, {
-        responseType: 'blob',
-      });
-
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-
-      const base = (report.report_name || `report_${report.id}`).replace(/[^a-z0-9 _.-]/gi, '_');
-      a.download = base.toLowerCase().endsWith('.pdf') ? base : `${base}.pdf`;
-
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
-    } catch (err) {
-      console.error('Error downloading report:', err);
-      setError('Failed to download report');
-    } finally {
-      setDownloadingReportId(null);
-    }
   };
 
   const getStatusBadgeColor = (status) => {
@@ -123,7 +78,6 @@ const CompanyDashboard = () => {
 
       {company ? (
         <>
-          {/* Company Header */}
           <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-6 mb-8">
             <div className="flex items-center justify-between">
               <div>
@@ -148,10 +102,9 @@ const CompanyDashboard = () => {
             </div>
           </div>
 
-          {/* Projects Section */}
           <div className="mb-6">
             <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Your Projects</h2>
-            
+
             {projects.length === 0 ? (
               <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-8 text-center">
                 <div className="text-gray-400 mb-4">
@@ -171,7 +124,8 @@ const CompanyDashboard = () => {
                 {projects.map((project) => (
                   <div
                     key={project.id}
-                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200"
+                    onClick={() => navigate(`/projects/${project.id}/reports`)}
+                    className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-lg font-semibold text-gray-900 dark:text-white truncate">
@@ -181,7 +135,7 @@ const CompanyDashboard = () => {
                         {project.status}
                       </span>
                     </div>
-                    
+
                     {project.description && (
                       <p className="text-gray-600 dark:text-gray-400 text-sm mb-3 line-clamp-2">
                         {project.description}
@@ -205,52 +159,19 @@ const CompanyDashboard = () => {
                           <span>{formatDate(project.current_end_date)}</span>
                         </div>
                       )}
-                      {project.visit_count !== undefined && (
-                        <div className="flex justify-between">
-                          <span>Site Visits:</span>
-                          <span>{project.visit_count}</span>
-                        </div>
-                      )}
-                      {project.sample_count !== undefined && (
-                        <div className="flex justify-between">
-                          <span>Samples:</span>
-                          <span>{project.sample_count}</span>
-                        </div>
-                      )}
                     </div>
 
-                    {/* Reports */}
                     <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <div className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Reports</div>
-                      {(reportsByProject[project.id] || []).length === 0 ? (
-                        <div className="text-sm text-gray-500 dark:text-gray-400">No reports available yet.</div>
-                      ) : (
-                        <ul className="space-y-2">
-                          {(reportsByProject[project.id] || []).map((r) => (
-                            <li key={r.id} className="flex items-center justify-between gap-2">
-                              <div className="min-w-0">
-                                <div className="text-sm text-gray-900 dark:text-gray-100 truncate">
-                                  {r.report_kind ? `${String(r.report_kind).toUpperCase()} Report` : 'Report'}
-                                  {r.worker_name ? ` - ${r.worker_name}` : ''}
-                                </div>
-                                <div className="text-xs text-gray-500 dark:text-gray-400">
-                                  {(r.report_date || r.generated_at) ? formatDate(r.report_date || r.generated_at) : ''}
-                                  {r.formatted_address ? ` • ${r.formatted_address}` : ''}
-                                  {r.location_label ? ` (${r.location_label})` : ''}
-                                </div>
-                              </div>
-                              <button
-                                type="button"
-                                onClick={() => downloadReport(r)}
-                                disabled={downloadingReportId === r.id}
-                                className="shrink-0 px-3 py-1 text-xs font-medium rounded bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
-                              >
-                                {downloadingReportId === r.id ? 'Downloading...' : 'Download'}
-                              </button>
-                            </li>
-                          ))}
-                        </ul>
-                      )}
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          navigate(`/projects/${project.id}/reports`);
+                        }}
+                        className="w-full px-3 py-2 text-sm font-medium rounded bg-blue-600 text-white hover:bg-blue-700"
+                      >
+                        View Reports
+                      </button>
                     </div>
                   </div>
                 ))}

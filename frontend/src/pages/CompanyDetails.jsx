@@ -446,11 +446,6 @@ const CompanyDetails = () => {
                       {project.status}
                     </span>
                   </div>
-                  {project.visit_count !== undefined && (
-                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Visits: {project.visit_count} | Samples: {project.sample_count || 0}
-                    </p>
-                  )}
                 </div>
               ))}
               {companyProjects.length > 5 && (

@@ -1,6 +1,6 @@
 from typing import List, Optional, Sequence, Union
 import re
-from fastapi import APIRouter, Depends, HTTPException, status, Body
+from fastapi import APIRouter, Depends, HTTPException, status, Body, Query
 import asyncpg
 from pydantic import BaseModel, Field, EmailStr, field_validator
 
@@ -61,6 +61,7 @@ def _highest_role_level(user: UserResponse) -> int:
 @router.get("", response_model=List[UserResponse])
 @router.get("/", response_model=List[UserResponse])  # Handle trailing slash
 async def list_users(
+    min_role_level: Optional[int] = Query(None, ge=0),
     current_user: dict = Depends(get_current_user),
     db: asyncpg.Pool = Depends(get_db),
 ):
@@ -74,7 +75,11 @@ async def list_users(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Insufficient permissions to view all users",
         )
-    users = await UserService(db).get_all_users()
+    service = UserService(db)
+    if min_role_level is not None:
+        users = await service.get_users_by_min_role_level(min_role_level)
+    else:
+        users = await service.get_all_users()
     return users
 
 

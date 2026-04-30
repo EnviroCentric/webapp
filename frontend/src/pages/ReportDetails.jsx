@@ -22,9 +22,11 @@ export default function ReportDetails() {
 
   const userRoleLevel = Math.max(...(user?.roles?.map(role => role.level) || [0]));
   const isTechnicianOrHigher = userRoleLevel >= 50;
+  const hasClientRole = user?.roles?.some(role => (role.name || '').toLowerCase() === 'client');
+  const isClient = !!(hasClientRole && user?.company_id && !user?.is_superuser);
 
   useEffect(() => {
-    if (!isTechnicianOrHigher) {
+    if (!isTechnicianOrHigher && !isClient) {
       navigate('/dashboard', { replace: true });
       return;
     }
@@ -70,7 +72,7 @@ export default function ReportDetails() {
         }
       }
     };
-  }, [isTechnicianOrHigher, navigate, reportId]);
+  }, [isClient, isTechnicianOrHigher, navigate, reportId]);
 
   const title = useMemo(() => getReportTitle(report), [report]);
   const kindLabel = useMemo(() => getReportKindLabel(report?.report_kind), [report]);
@@ -170,6 +172,10 @@ export default function ReportDetails() {
             <div>
               <div className="text-gray-500 dark:text-gray-400">Type</div>
               <div className="text-gray-900 dark:text-gray-100">{kindLabel || '—'}</div>
+            </div>
+            <div>
+              <div className="text-gray-500 dark:text-gray-400">Location</div>
+              <div className="text-gray-900 dark:text-gray-100">{report?.location_label || '—'}</div>
             </div>
             <div className="md:col-span-2">
               <div className="text-gray-500 dark:text-gray-400">Notes</div>

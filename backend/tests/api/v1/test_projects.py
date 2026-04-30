@@ -70,6 +70,43 @@ async def test_create_project_forbidden_field_tech(client: AsyncClient, field_te
     assert resp.status_code == status.HTTP_403_FORBIDDEN
 
 
+async def test_users_min_role_level_filters_project_assignees(
+    client: AsyncClient,
+    db_pool,
+    admin_token_headers: dict,
+    normal_user,
+    field_tech_user,
+):
+    """Project assignment picker should only receive technician-level users."""
+    async with db_pool.acquire() as conn:
+        await conn.execute("UPDATE users SET highest_level = 0 WHERE id = $1", field_tech_user.id)
+
+    resp = await client.get("/api/v1/users?min_role_level=50", headers=admin_token_headers)
+    assert resp.status_code == status.HTTP_200_OK, resp.text
+
+    user_ids = {user["id"] for user in resp.json()}
+    assert field_tech_user.id in user_ids
+    assert normal_user.id not in user_ids
+
+
+async def test_employees_endpoint_includes_technicians_with_email(
+    client: AsyncClient,
+    db_pool,
+    admin_token_headers: dict,
+    field_tech_user,
+):
+    """Project technician picker uses the employees endpoint and needs email labels."""
+    async with db_pool.acquire() as conn:
+        await conn.execute("UPDATE users SET highest_level = 0 WHERE id = $1", field_tech_user.id)
+
+    resp = await client.get("/api/v1/users/employees", headers=admin_token_headers)
+    assert resp.status_code == status.HTTP_200_OK, resp.text
+
+    tech = next((user for user in resp.json() if user["id"] == field_tech_user.id), None)
+    assert tech is not None
+    assert tech["email"] == field_tech_user.email
+
+
 async def test_get_project_requires_assignment_for_field_tech(
     client: AsyncClient,
     admin_token_headers: dict,

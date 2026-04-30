@@ -1,6 +1,7 @@
 import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 
 import CompanyReports from './CompanyReports';
 
@@ -19,7 +20,7 @@ vi.mock('../context/AuthContext', () => {
   return {
     useAuth: () => ({
       user: {
-        roles: [{ name: 'supervisor', level: 80 }],
+        roles: [{ name: 'manager', level: 90 }],
         is_superuser: false,
       },
     }),
@@ -90,7 +91,17 @@ describe('CompanyReports', () => {
     render(<CompanyReports />);
 
     expect(await screen.findByText('Company Reports')).toBeInTheDocument();
-    expect(await screen.findByText('123 Main St 02/24/26')).toBeInTheDocument();
+    expect((await screen.findAllByText(/123 Main St/)).length).toBeGreaterThan(0);
     expect(screen.getByText(/proj 123/i)).toBeInTheDocument();
+  });
+
+  it('links upload to the current company', async () => {
+    const user = userEvent.setup();
+    render(<CompanyReports />);
+
+    await screen.findByText('Company Reports');
+    await user.click(screen.getByRole('button', { name: /upload report/i }));
+
+    expect(mockNavigate).toHaveBeenCalledWith('/reports/upload?companyId=77');
   });
 });

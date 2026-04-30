@@ -124,6 +124,7 @@ class UserWithTokens(UserResponse):
 
 class EmployeeResponse(BaseModel):
     id: int
+    email: EmailStr
     first_name: str
     last_name: str
     roles: List[RoleResponse] = Field(default_factory=list)

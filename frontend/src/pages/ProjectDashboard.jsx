@@ -26,6 +26,7 @@ export default function ProjectDashboard() {
   // Get the highest role level from user's roles
   const userRoleLevel = Math.max(...(user?.roles?.map(role => role.level) || [0]));
   const isSupervisorOrHigher = userRoleLevel >= 80; // Supervisor level is 80
+  const isManagerOrHigher = user?.is_superuser || userRoleLevel >= 90;
 
   const today = new Date().toISOString().slice(0, 10);
 
@@ -61,8 +62,8 @@ export default function ProjectDashboard() {
 
   const fetchTechnicians = async () => {
     try {
-      // Get users with role level >= 50 (technician level)
-      const response = await api.get('/api/v1/users?min_role_level=50');
+      // Get assignable employees with technician-level project access.
+      const response = await api.get('/api/v1/users/employees');
       setAvailableTechnicians(response.data);
     } catch (err) {
       console.error('Error fetching technicians:', err);
@@ -246,7 +247,8 @@ export default function ProjectDashboard() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/*
         <button
           onClick={handleOpenSampleModal}
           className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 text-left"
@@ -270,6 +272,7 @@ export default function ProjectDashboard() {
             Process and analyze collected samples
           </p>
         </button>
+        */}
 
         <button
           onClick={() => handleAction('reports')}
@@ -282,6 +285,20 @@ export default function ProjectDashboard() {
             Access and generate project reports
           </p>
         </button>
+
+        {isManagerOrHigher && (
+          <button
+            onClick={() => navigate(`/reports/upload?projectId=${projectId}`)}
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow duration-200 text-left"
+          >
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+              Upload Report
+            </h3>
+            <p className="text-gray-500 dark:text-gray-400">
+              Upload a PDF report for this project
+            </p>
+          </button>
+        )}
       </div>
 
       {project.addresses && project.addresses.length > 0 && (
@@ -335,8 +352,15 @@ export default function ProjectDashboard() {
                     }}
                     className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <span className="ml-3 text-gray-700 dark:text-gray-300">
-                    {tech.first_name} {tech.last_name}
+                  <span className="ml-3 flex min-w-0 flex-col text-gray-700 dark:text-gray-300">
+                    <span className="truncate">
+                      {tech.first_name} {tech.last_name}
+                    </span>
+                    {tech.email && (
+                      <span className="truncate text-sm text-gray-500 dark:text-gray-400">
+                        {tech.email}
+                      </span>
+                    )}
                   </span>
                 </label>
               ))}

@@ -5,6 +5,10 @@ import { render, screen } from '@testing-library/react';
 import ReportDetails from './ReportDetails';
 
 const mockNavigate = vi.fn();
+let mockUser = {
+  roles: [{ name: 'field_tech', level: 50 }],
+  is_superuser: false,
+};
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual('react-router-dom');
@@ -18,10 +22,7 @@ vi.mock('react-router-dom', async () => {
 vi.mock('../context/AuthContext', () => {
   return {
     useAuth: () => ({
-      user: {
-        roles: [{ name: 'field_tech', level: 50 }],
-        is_superuser: false,
-      },
+      user: mockUser,
     }),
   };
 });
@@ -42,6 +43,10 @@ describe('ReportDetails', () => {
 
     mockNavigate.mockReset();
     apiGet.mockReset();
+    mockUser = {
+      roles: [{ name: 'field_tech', level: 50 }],
+      is_superuser: false,
+    };
 
     if (!window.URL.createObjectURL) {
       Object.defineProperty(window.URL, 'createObjectURL', {
@@ -72,6 +77,7 @@ describe('ReportDetails', () => {
             report_kind: 'area',
             report_date: '2026-02-25',
             formatted_address: '123 Main St, Testville, TX 00000',
+            location_label: 'Boiler Room',
             generated_by_name: 'Uploader Name',
             technician_name: 'Tech Name',
           },
@@ -89,9 +95,26 @@ describe('ReportDetails', () => {
 
     expect(await screen.findByRole('heading', { name: /123 main st/i })).toBeInTheDocument();
     expect(await screen.findByText(/uploaded by/i)).toBeInTheDocument();
+    expect(await screen.findByText('Location')).toBeInTheDocument();
+    expect(await screen.findByText('Boiler Room')).toBeInTheDocument();
 
     // iframe should be present after PDF loads
     const iframe = await screen.findByTitle('Report PDF');
     expect(iframe).toBeInTheDocument();
+  });
+
+  it('allows a client user to view a report PDF', async () => {
+    mockUser = {
+      roles: [{ name: 'client', level: 10 }],
+      company_id: 77,
+      is_superuser: false,
+    };
+
+    render(<ReportDetails />);
+
+    expect(await screen.findByTitle('Report PDF')).toBeInTheDocument();
+    expect(mockNavigate).not.toHaveBeenCalledWith('/dashboard', expect.anything());
+    expect(apiGet).toHaveBeenCalledWith('/api/v1/reports/9');
+    expect(apiGet).toHaveBeenCalledWith('/api/v1/reports/9/download', { responseType: 'blob' });
   });
 });

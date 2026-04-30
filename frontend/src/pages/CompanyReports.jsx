@@ -32,6 +32,7 @@ export default function CompanyReports() {
 
   const userRoleLevel = Math.max(...(user?.roles?.map(role => role.level) || [0]));
   const isSupervisorOrHigher = userRoleLevel >= 80;
+  const isManagerOrHigher = user?.is_superuser || userRoleLevel >= 90;
 
   useEffect(() => {
     if (!isSupervisorOrHigher) {
@@ -231,6 +232,15 @@ export default function CompanyReports() {
               className="block w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-white px-3 py-2"
             />
           </div>
+          {isManagerOrHigher && (
+            <button
+              type="button"
+              onClick={() => navigate(`/reports/upload?companyId=${companyId}`)}
+              className="px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700"
+            >
+              Upload Report
+            </button>
+          )}
           <button
             type="button"
             onClick={() => setShowFilters((v) => !v)}

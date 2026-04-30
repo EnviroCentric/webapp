@@ -1,9 +1,9 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import api from '../services/api';
 import { useAuth } from '../context/AuthContext';
 import AddressInput from '../components/AddressInput';
-import { formatPersonName } from '../utils/textUtils';
+import { formatPersonName, toTitleCase } from '../utils/textUtils';
 
 const REPORT_KINDS = [
   { value: 'personal', label: 'Personal' },
@@ -14,8 +14,11 @@ const REPORT_KINDS = [
 export default function ReportUpload() {
   const { user, refreshUserData } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
 
   const refreshedOnce = useRef(false);
+  const pendingProjectId = useRef(null);
+  const prefillApplied = useRef(false);
 
   const [companies, setCompanies] = useState([]);
   const [projects, setProjects] = useState([]);
@@ -32,6 +35,8 @@ export default function ReportUpload() {
   const [technicianName, setTechnicianName] = useState('');
   const [technicianUserId, setTechnicianUserId] = useState(null);
   const [technicianSuggestions, setTechnicianSuggestions] = useState([]);
+  const [technicianMenuOpen, setTechnicianMenuOpen] = useState(false);
+  const [selectedTechnician, setSelectedTechnician] = useState(null);
   const [notes, setNotes] = useState('');
   const [file, setFile] = useState(null);
 
@@ -40,8 +45,37 @@ export default function ReportUpload() {
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
 
+  const prefillCompanyId = searchParams.get('companyId');
+  const prefillProjectId = searchParams.get('projectId');
 
   const selectedProject = useMemo(() => projects.find(p => String(p.id) === String(selectedProjectId)), [projects, selectedProjectId]);
+
+  const filteredTechnicians = useMemo(() => {
+    const term = technicianName.trim().toLowerCase();
+    const options = technicianSuggestions || [];
+    if (!term) return options;
+
+    return options.filter((t) => {
+      const haystack = [t.name, t.email, t.assigned ? 'assigned' : 'employee']
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
+      return haystack.includes(term);
+    });
+  }, [technicianName, technicianSuggestions]);
+
+  const chooseTechnician = (tech) => {
+    setSelectedTechnician(tech);
+    setTechnicianUserId(tech.id);
+    setTechnicianName(tech.name);
+    setTechnicianMenuOpen(false);
+  };
+
+  const clearTechnicianSelection = (value = '') => {
+    setSelectedTechnician(null);
+    setTechnicianUserId(null);
+    setTechnicianName(value);
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +106,26 @@ export default function ReportUpload() {
         }
 
         const resp = await api.get('/api/v1/companies/');
-        if (!cancelled) setCompanies(resp.data || []);
+        if (cancelled) return;
+
+        setCompanies(resp.data || []);
+
+        if (!prefillApplied.current) {
+          prefillApplied.current = true;
+
+          if (prefillProjectId) {
+            const projectResp = await api.get(`/api/v1/projects/${prefillProjectId}`);
+            if (cancelled) return;
+
+            const project = projectResp.data;
+            if (project?.company_id) {
+              pendingProjectId.current = String(project.id);
+              setSelectedCompanyId(String(project.company_id));
+            }
+          } else if (prefillCompanyId) {
+            setSelectedCompanyId(String(prefillCompanyId));
+          }
+        }
       } catch (err) {
         console.error('Failed to fetch companies:', err);
         if (!cancelled) setError('Failed to load companies');
@@ -86,7 +139,7 @@ export default function ReportUpload() {
     return () => {
       cancelled = true;
     };
-  }, [navigate, refreshUserData, user]);
+  }, [navigate, prefillCompanyId, prefillProjectId, refreshUserData, user]);
 
   useEffect(() => {
     const fetchProjects = async () => {
@@ -99,13 +152,20 @@ export default function ReportUpload() {
 
       setError('');
       setSuccess('');
+      const nextProjectId = pendingProjectId.current;
       setSelectedProjectId('');
       setReportKind('');
       setProjects([]);
 
       try {
         const resp = await api.get(`/api/v1/companies/${selectedCompanyId}/projects`);
-        setProjects(resp.data.projects || []);
+        const loadedProjects = resp.data.projects || [];
+        setProjects(loadedProjects);
+
+        if (nextProjectId && loadedProjects.some(p => String(p.id) === String(nextProjectId))) {
+          setSelectedProjectId(String(nextProjectId));
+          pendingProjectId.current = null;
+        }
       } catch (err) {
         console.error('Failed to fetch company projects:', err);
         setError('Failed to load projects for that company');
@@ -124,6 +184,8 @@ export default function ReportUpload() {
     setWorkerName('');
     setTechnicianName('');
     setTechnicianUserId(null);
+    setSelectedTechnician(null);
+    setTechnicianMenuOpen(false);
     setNotes('');
     setFile(null);
   }, [selectedProjectId, reportKind]);
@@ -136,17 +198,47 @@ export default function ReportUpload() {
       }
 
       try {
-        const resp = await api.get(`/api/v1/projects/${selectedProjectId}/technicians`);
-        const techs = resp.data || [];
-        setTechnicianSuggestions(
-          techs.map(t => ({
+        const [assignedResp, employeesResp] = await Promise.all([
+          api.get(`/api/v1/projects/${selectedProjectId}/technicians`),
+          api.get('/api/v1/users/employees'),
+        ]);
+
+        const assigned = assignedResp.data || [];
+        const employees = employeesResp.data || [];
+        const assignedIds = new Set(assigned.map((t) => String(t.id)));
+        const byId = new Map();
+
+        assigned.forEach((t) => {
+          byId.set(String(t.id), {
             id: t.id,
             name: formatPersonName(t.first_name, t.last_name),
-          }))
-        );
+            email: t.email || '',
+            assigned: true,
+          });
+        });
+
+        employees.forEach((t) => {
+          if (!byId.has(String(t.id))) {
+            byId.set(String(t.id), {
+              id: t.id,
+              name: formatPersonName(t.first_name, t.last_name),
+              email: t.email || '',
+              assigned: assignedIds.has(String(t.id)),
+            });
+          }
+        });
+
+        const merged = [...byId.values()]
+          .filter((t) => t.name)
+          .sort((a, b) => {
+            if (a.assigned !== b.assigned) return a.assigned ? -1 : 1;
+            return a.name.localeCompare(b.name);
+          });
+
+        setTechnicianSuggestions(merged);
       } catch (err) {
-        // Non-fatal: still allow freeform entry.
-        console.warn('Failed to load assigned technicians:', err);
+        // Non-fatal: technician selection can remain freeform.
+        console.warn('Failed to load technicians:', err);
         setTechnicianSuggestions([]);
       }
     };
@@ -231,6 +323,38 @@ export default function ReportUpload() {
     try {
       setSubmitting(true);
 
+      let technicianIdToSubmit = technicianUserId;
+      let technicianNameToSubmit = technicianName.trim();
+      let technicianToAssign = selectedTechnician;
+
+      if (!technicianToAssign && technicianNameToSubmit) {
+        const exactMatch = technicianSuggestions.find(
+          (t) => t.name.toLowerCase() === technicianNameToSubmit.toLowerCase()
+        );
+        if (exactMatch) {
+          technicianToAssign = exactMatch;
+          technicianIdToSubmit = exactMatch.id;
+          technicianNameToSubmit = exactMatch.name;
+        }
+      }
+
+      if (technicianToAssign && !technicianToAssign.assigned) {
+        try {
+          await api.post(`/api/v1/projects/${selectedProjectId}/technicians`, {
+            user_id: technicianToAssign.id,
+          });
+          technicianToAssign = { ...technicianToAssign, assigned: true };
+          setSelectedTechnician(technicianToAssign);
+          setTechnicianSuggestions((prev) =>
+            prev.map((t) => String(t.id) === String(technicianToAssign.id) ? { ...t, assigned: true } : t)
+          );
+        } catch (assignErr) {
+          console.error('Technician assignment failed:', assignErr);
+          setError('Failed to assign technician to this project');
+          return;
+        }
+      }
+
       const data = new FormData();
       data.append('project_id', String(selectedProjectId));
       data.append('report_kind', reportKind);
@@ -241,8 +365,8 @@ export default function ReportUpload() {
       if (address.longitude != null) data.append('longitude', String(address.longitude));
       if (locationLabel.trim()) data.append('location_label', locationLabel.trim());
       if (reportKind === 'personal') data.append('worker_name', workerName.trim());
-      if (technicianName.trim()) data.append('technician_name', technicianName.trim());
-      if (technicianUserId != null) data.append('technician_user_id', String(technicianUserId));
+      if (technicianNameToSubmit) data.append('technician_name', technicianNameToSubmit);
+      if (technicianIdToSubmit != null) data.append('technician_user_id', String(technicianIdToSubmit));
       if (notes.trim()) data.append('notes', notes.trim());
       data.append('file', file);
 
@@ -258,6 +382,8 @@ export default function ReportUpload() {
       setWorkerName('');
       setTechnicianName('');
       setTechnicianUserId(null);
+      setSelectedTechnician(null);
+      setTechnicianMenuOpen(false);
       setNotes('');
       setFile(null);
     } catch (err) {
@@ -302,7 +428,7 @@ export default function ReportUpload() {
             onChange={(e) => setSelectedCompanyId(e.target.value)}
             className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
           >
-            <option value="">Select a company...</option>
+            <option value="">Select A Company...</option>
             {companies.map(c => (
               <option key={c.id} value={c.id}>{c.name}</option>
             ))}
@@ -318,14 +444,14 @@ export default function ReportUpload() {
               onChange={(e) => setSelectedProjectId(e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
-              <option value="">Select a project...</option>
+              <option value="">Select A Project...</option>
               {projects.map(p => (
                 <option key={p.id} value={p.id}>{p.name}</option>
               ))}
             </select>
             {selectedProject && (
               <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                {selectedProject.status ? `Status: ${selectedProject.status}` : null}
+                {selectedProject.status ? `Status: ${toTitleCase(selectedProject.status)}` : null}
               </div>
             )}
           </div>
@@ -340,7 +466,7 @@ export default function ReportUpload() {
               onChange={(e) => setReportKind(e.target.value)}
               className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
             >
-              <option value="">Select a type...</option>
+              <option value="">Select A Type...</option>
               {REPORT_KINDS.map(k => (
                 <option key={k.value} value={k.value}>{k.label}</option>
               ))}
@@ -378,27 +504,67 @@ export default function ReportUpload() {
               )}
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Technician</label>
-                <input
-                  type="text"
-                  value={technicianName}
-                  onChange={(e) => {
-                    const v = e.target.value;
-                    setTechnicianName(v);
-                    const match = technicianSuggestions.find(t => t.name === v);
-                    setTechnicianUserId(match ? match.id : null);
-                  }}
-                  list="report-technician-options"
-                  className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
-                  placeholder="Start typing to search assigned technicians..."
-                />
-                <datalist id="report-technician-options">
-                  {technicianSuggestions.map((t) => (
-                    <option key={t.id} value={t.name} />
-                  ))}
-                </datalist>
-                <div className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Free text is allowed. Suggestions come from employees assigned to the selected project.
+                <label htmlFor="report-technician" className="block text-sm font-medium text-gray-700 dark:text-gray-300">Technician</label>
+                <div className="relative">
+                  <input
+                    id="report-technician"
+                    type="text"
+                    role="combobox"
+                    aria-expanded={technicianMenuOpen}
+                    aria-controls="report-technician-options"
+                    aria-autocomplete="list"
+                    value={technicianName}
+                    onFocus={() => setTechnicianMenuOpen(true)}
+                    onChange={(e) => {
+                      clearTechnicianSelection(e.target.value);
+                      setTechnicianMenuOpen(true);
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Escape') {
+                        setTechnicianMenuOpen(false);
+                      }
+                      if (e.key === 'Enter' && technicianMenuOpen && filteredTechnicians.length > 0) {
+                        e.preventDefault();
+                        chooseTechnician(filteredTechnicians[0]);
+                      }
+                    }}
+                    onBlur={() => window.setTimeout(() => setTechnicianMenuOpen(false), 120)}
+                    className="mt-1 block w-full rounded-md border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                    placeholder="Select Or Type Technician..."
+                  />
+                  {technicianMenuOpen && (
+                    <div
+                      id="report-technician-options"
+                      role="listbox"
+                      className="absolute z-20 mt-1 max-h-56 w-full overflow-auto rounded-md border border-gray-200 dark:border-gray-600 bg-white dark:bg-gray-800 shadow-lg"
+                    >
+                      {filteredTechnicians.length > 0 ? (
+                        filteredTechnicians.map((t) => (
+                          <button
+                            key={t.id}
+                            type="button"
+                            role="option"
+                            aria-selected={String(t.id) === String(technicianUserId)}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onClick={() => chooseTechnician(t)}
+                            className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left text-sm text-gray-800 dark:text-gray-100 hover:bg-blue-50 dark:hover:bg-gray-700"
+                          >
+                            <span className="min-w-0">
+                              <span className="block truncate font-medium">{t.name}</span>
+                              {t.email ? <span className="block truncate text-xs text-gray-500 dark:text-gray-400">{t.email}</span> : null}
+                            </span>
+                            <span className={`shrink-0 rounded-full px-2 py-0.5 text-xs ${t.assigned ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200' : 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-200'}`}>
+                              {t.assigned ? 'Assigned' : 'Employee'}
+                            </span>
+                          </button>
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-sm text-gray-500 dark:text-gray-400">
+                          Use Typed Technician Name
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -437,12 +603,26 @@ export default function ReportUpload() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">PDF File</label>
+              <div className="block text-sm font-medium text-gray-700 dark:text-gray-300">PDF File</div>
+              <label
+                htmlFor="report-pdf-file"
+                className="mt-2 flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-blue-300 bg-blue-50 px-6 py-8 text-center transition hover:border-blue-500 hover:bg-blue-100 focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 focus-within:ring-offset-2 dark:border-blue-700 dark:bg-blue-950/30 dark:hover:bg-blue-900/40"
+              >
+                <span className="sr-only">PDF File</span>
+                <span className="text-sm font-semibold text-blue-700 dark:text-blue-200">
+                  {file ? file.name : 'Choose PDF'}
+                </span>
+                <span className="mt-1 text-xs text-blue-600 dark:text-blue-300">
+                  Click To Select A Report PDF
+                </span>
+              </label>
               <input
+                id="report-pdf-file"
                 type="file"
+                aria-label="PDF File"
                 accept="application/pdf,.pdf"
                 onChange={(e) => setFile(e.target.files?.[0] || null)}
-                className="mt-1 block w-full text-sm text-gray-700 dark:text-gray-300"
+                className="sr-only"
               />
             </div>
 

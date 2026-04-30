@@ -31,10 +31,12 @@ export default function ProjectReports() {
 
   const userRoleLevel = Math.max(...(user?.roles?.map(role => role.level) || [0]));
   const isTechnicianOrHigher = userRoleLevel >= 50;
+  const hasClientRole = user?.roles?.some(role => (role.name || '').toLowerCase() === 'client');
+  const isClient = !!(hasClientRole && user?.company_id && !user?.is_superuser);
   const isManagerOrHigher = (user?.is_superuser || userRoleLevel >= 90);
 
   useEffect(() => {
-    if (!isTechnicianOrHigher) {
+    if (!isTechnicianOrHigher && !isClient) {
       navigate('/dashboard', { replace: true });
       return;
     }
@@ -46,9 +48,13 @@ export default function ProjectReports() {
       setError('');
 
       try {
+        const reportsRequest = isClient
+          ? api.get(`/api/v1/reports/client/projects/${projectId}/reports`)
+          : api.get('/api/v1/reports/', { params: { project_id: projectId } });
+
         const [projectResp, reportsResp] = await Promise.all([
           api.get(`/api/v1/projects/${projectId}`),
-          api.get('/api/v1/reports/', { params: { project_id: projectId } }),
+          reportsRequest,
         ]);
 
         if (cancelled) return;
@@ -68,7 +74,7 @@ export default function ProjectReports() {
     return () => {
       cancelled = true;
     };
-  }, [isTechnicianOrHigher, navigate, projectId]);
+  }, [isClient, isTechnicianOrHigher, navigate, projectId]);
 
   const sortedReports = useMemo(() => {
     const copy = [...(reports || [])];
@@ -222,7 +228,7 @@ export default function ProjectReports() {
         {isManagerOrHigher && (
           <button
             type="button"
-            onClick={() => navigate('/reports/upload')}
+            onClick={() => navigate(`/reports/upload?projectId=${projectId}`)}
             className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
           >
             Upload Report

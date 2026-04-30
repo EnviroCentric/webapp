@@ -233,13 +233,23 @@ LEFT JOIN companies c ON u.company_id = c.id
 LEFT JOIN user_roles ur ON ur.user_id = u.id
 LEFT JOIN roles r ON r.id = ur.role_id
 WHERE u.is_active = true
-  AND u.highest_level >= $1
+  AND (
+    u.is_superuser = true
+    OR EXISTS (
+      SELECT 1
+      FROM user_roles ur2
+      JOIN roles r2 ON ur2.role_id = r2.id
+      WHERE ur2.user_id = u.id
+        AND (r2.level >= $1 OR r2.name IN ('field_tech', 'lab_tech'))
+    )
+  )
 GROUP BY u.id, c.name
 ORDER BY u.first_name, u.last_name;
 
 -- name: get_employees_minimal
 SELECT
   u.id,
+  u.email,
   u.first_name,
   u.last_name,
   COALESCE(
@@ -259,12 +269,12 @@ LEFT JOIN user_roles ur ON ur.user_id = u.id
 LEFT JOIN roles r ON r.id = ur.role_id
 WHERE u.is_active = true
   AND (
-    u.is_superuser = true 
+    u.is_superuser = true
     OR EXISTS (
       SELECT 1 FROM user_roles ur2 
       JOIN roles r2 ON ur2.role_id = r2.id 
       WHERE ur2.user_id = u.id 
-      AND r2.level >= $1
+      AND (r2.level >= $1 OR r2.name IN ('field_tech', 'lab_tech'))
     )
   )
 GROUP BY u.id

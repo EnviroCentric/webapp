@@ -620,22 +620,38 @@ async def assign_technician_to_project(
                 detail="Technician not found"
             )
 
-        # Determine target user's effective level from roles (source of truth).
+        # Determine target user's effective role from user_roles (source of truth).
         # Fall back to superuser bypass.
-        technician_level = 999 if technician["is_superuser"] else await conn.fetchval(
+        can_assign_as_technician = technician["is_superuser"] or await conn.fetchval(
             """
+            SELECT EXISTS(
+                SELECT 1
+                FROM user_roles ur
+                JOIN roles r ON ur.role_id = r.id
+                WHERE ur.user_id = $1
+                  AND (r.level >= 50 OR r.name IN ('field_tech', 'lab_tech'))
+            )
+            """,
+            technician_id,
+        )
+
+        if not can_assign_as_technician:
+            technician_level = await conn.fetchval(
+                """
             SELECT COALESCE(MAX(r.level), 0)
             FROM user_roles ur
             JOIN roles r ON ur.role_id = r.id
             WHERE ur.user_id = $1
             """,
-            technician_id,
-        )
-
-        if technician_level < 50:  # Must be at least field tech level
+                technician_id,
+            )
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="User must have technician level or higher to be assigned to projects"
+                detail=(
+                    "User must have the field_tech or lab_tech role, "
+                    f"or technician level or higher, to be assigned to projects. "
+                    f"Current highest level: {technician_level or 0}"
+                )
             )
     
     result = await project_service.assign_technician_to_project(
