@@ -1,0 +1,5 @@
+{
+  "EnviroBillingStack": {
+    "BillingTopicArn": "arn:aws:sns:us-east-1:083635830460:EnviroBillingStack-BillingAlertsTopic00FB10CB-X4G2H3MKsz9m"
+  }
+}

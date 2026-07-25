@@ -1,0 +1,13 @@
+{
+  "EnviroHostingStack": {
+    "WebsiteBucketName": "envirohostingstack-websitebucket75c24d94-a3vvrhxb2vwn",
+    "ApiElasticIp": "184.33.133.157",
+    "InstanceId": "i-028cb0392c8a3f24c",
+    "User1BootstrapParameter": "/enviro-centric/bootstrap/user1",
+    "DistributionId": "E26KFFO620YS4Q",
+    "ReportsBucketName": "envirohostingstack-reportsbucket4e7c5994-idvsadphxtsn",
+    "BackupsBucketName": "envirohostingstack-backupsbucketc69911ed-a30bizrtlasg",
+    "BackendRepositoryUri": "083635830460.dkr.ecr.us-west-2.amazonaws.com/enviro-centric-backend",
+    "DistributionDomainName": "d1viiy6vl5de2z.cloudfront.net"
+  }
+}

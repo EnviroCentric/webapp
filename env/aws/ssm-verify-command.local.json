@@ -1,0 +1,16 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-028cb0392c8a3f24c"],
+  "Comment": "Verify Enviro-Centric backend, user 1, and backup timer",
+  "Parameters": {
+    "commands": [
+      "set -euo pipefail",
+      "cd /opt/enviro-centric",
+      "docker compose --env-file production.env -f docker-compose.production.yml exec -T backend curl -fsS http://localhost:8000/health",
+      "docker compose --env-file production.env -f docker-compose.production.yml exec -T db sh -c 'psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -Atc \"SELECT COUNT(*) FROM users;\"' | grep -qx 1",
+      "docker compose --env-file production.env -f docker-compose.production.yml exec -T db sh -c 'psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -Atc \"SELECT COUNT(*) FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE u.id=1 AND u.is_active AND u.is_superuser AND u.highest_level=100 AND r.name='\"'\"'admin'\"'\"';\"' | grep -qx 1",
+      "systemctl is-active --quiet enviro-backup.timer",
+      "echo verification-ok"
+    ]
+  }
+}

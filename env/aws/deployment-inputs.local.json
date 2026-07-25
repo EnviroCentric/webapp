@@ -1,0 +1,12 @@
+{
+  "account": "083635830460",
+  "region": "us-west-2",
+  "appName": "enviro-centric",
+  "domainName": "enviro-centric.com",
+  "websiteDomain": "www.enviro-centric.com",
+  "apiDomain": "api.enviro-centric.com",
+  "cloudFrontCertificateArn": "arn:aws:acm:us-east-1:083635830460:certificate/cee0f666-3a98-4ad3-9eb8-ee8656b45630",
+  "billingEmail": "sarah@enviro-centric.com",
+  "monthlyBudgetUsd": 30,
+  "instanceType": "t4g.small"
+}

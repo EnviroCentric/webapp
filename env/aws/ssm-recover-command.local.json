@@ -1,0 +1,25 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-028cb0392c8a3f24c"],
+  "Comment": "Resume Enviro-Centric bootstrap after corrected user payload",
+  "Parameters": {
+    "commands": [
+      "set -euo pipefail",
+      "cd /opt/enviro-centric",
+      "aws s3 cp s3://envirohostingstack-backupsbucketc69911ed-a30bizrtlasg/bootstrap/runtime.zip /tmp/enviro-runtime.zip --only-show-errors",
+      "unzip -o /tmp/enviro-runtime.zip -d /opt/enviro-centric",
+      "sed -i 's/\\r$//' /opt/enviro-centric/*.sh",
+      "chmod 0750 /opt/enviro-centric/*.sh",
+      "aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 083635830460.dkr.ecr.us-west-2.amazonaws.com",
+      "docker compose --env-file production.env -f docker-compose.production.yml pull backend",
+      "docker compose --env-file production.env -f docker-compose.production.yml up -d backend",
+      "for i in $(seq 1 60); do if docker compose --env-file production.env -f docker-compose.production.yml exec -T backend curl -fsS http://localhost:8000/health >/dev/null 2>&1; then break; fi; if [ $i -eq 60 ]; then exit 1; fi; sleep 5; done",
+      "aws ssm get-parameter --region us-west-2 --with-decryption --name /enviro-centric/bootstrap/user1 --query Parameter.Value --output text | base64 -d | docker compose --env-file production.env -f docker-compose.production.yml exec -T backend python scripts/bootstrap_user1.py",
+      "docker compose --env-file production.env -f docker-compose.production.yml exec -T db sh -c 'psql -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -Atc \"SELECT COUNT(*) FROM users WHERE id = 1 AND is_active AND is_superuser AND highest_level = 100;\"' | grep -qx 1",
+      "aws ssm delete-parameter --region us-west-2 --name /enviro-centric/bootstrap/user1",
+      "./install-backup-timer.sh",
+      "docker compose --env-file production.env -f docker-compose.production.yml ps",
+      "rm -f /tmp/enviro-runtime.zip"
+    ]
+  }
+}

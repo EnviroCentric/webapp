@@ -1,0 +1,10 @@
+{
+  "account": "083635830460",
+  "region": "us-west-2",
+  "appName": "enviro-centric",
+  "domainName": "enviro-centric.com",
+  "apiDomain": "api.enviro-centric.com",
+  "billingEmail": "sarah@enviro-centric.com",
+  "monthlyBudgetUsd": 30,
+  "instanceType": "t4g.small"
+}

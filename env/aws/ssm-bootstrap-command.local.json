@@ -1,0 +1,30 @@
+{
+  "DocumentName": "AWS-RunShellScript",
+  "InstanceIds": ["i-028cb0392c8a3f24c"],
+  "Comment": "Install Enviro-Centric production runtime and preserve user 1",
+  "Parameters": {
+    "commands": [
+      "set -euo pipefail",
+      "dnf install -y unzip",
+      "systemctl enable --now docker",
+      "until docker compose version >/dev/null 2>&1; do sleep 5; done",
+      "mkdir -p /opt/enviro-centric",
+      "aws s3 cp s3://envirohostingstack-backupsbucketc69911ed-a30bizrtlasg/bootstrap/runtime.zip /tmp/enviro-runtime.zip --only-show-errors",
+      "unzip -o /tmp/enviro-runtime.zip -d /opt/enviro-centric",
+      "sed -i 's/\\r$//' /opt/enviro-centric/*.sh",
+      "chmod 0750 /opt/enviro-centric/*.sh",
+      "cd /opt/enviro-centric",
+      "aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin 083635830460.dkr.ecr.us-west-2.amazonaws.com",
+      "export APP_NAME=enviro-centric AWS_REGION=us-west-2 API_DOMAIN=api.enviro-centric.com WEBSITE_ORIGIN=https://d1viiy6vl5de2z.cloudfront.net REPORTS_BUCKET=envirohostingstack-reportsbucket4e7c5994-idvsadphxtsn BACKUPS_BUCKET=envirohostingstack-backupsbucketc69911ed-a30bizrtlasg BACKEND_IMAGE=083635830460.dkr.ecr.us-west-2.amazonaws.com/enviro-centric-backend:latest",
+      "./render-production-env.sh",
+      "docker compose --env-file production.env -f docker-compose.production.yml pull db backend",
+      "docker compose --env-file production.env -f docker-compose.production.yml up -d db backend",
+      "for i in $(seq 1 60); do if docker compose --env-file production.env -f docker-compose.production.yml exec -T backend curl -fsS http://localhost:8000/health >/dev/null 2>&1; then break; fi; if [ $i -eq 60 ]; then docker compose --env-file production.env -f docker-compose.production.yml logs backend; exit 1; fi; sleep 5; done",
+      "aws ssm get-parameter --region us-west-2 --with-decryption --name /enviro-centric/bootstrap/user1 --query Parameter.Value --output text | docker compose --env-file production.env -f docker-compose.production.yml exec -T backend python scripts/bootstrap_user1.py",
+      "aws ssm delete-parameter --region us-west-2 --name /enviro-centric/bootstrap/user1",
+      "./install-backup-timer.sh",
+      "docker compose --env-file production.env -f docker-compose.production.yml ps",
+      "rm -f /tmp/enviro-runtime.zip"
+    ]
+  }
+}
