@@ -8,7 +8,7 @@ place avoids duplication and makes it easy to see which variables are
 required.  See `.env.example` for a sample configuration.
 """
 
-from typing import List
+from typing import List, Optional
 # Pydantic v2 moved `BaseSettings` to the `pydantic_settings` package.  See
 # https://docs.pydantic.dev/latest/migration/#basesettings-has-moved-to-pydantic-settings
 try:
@@ -69,6 +69,9 @@ class Settings(BaseSettings):
     ALLOWED_ORIGINS: List[str] = Field(["*"], description="CORS allowed origins")
     BACKEND_PORT: int = Field(8000, description="Port to bind the backend server")
     GOOGLE_MAPS_API_KEY: str = Field(..., description="Google Places API key for address autocomplete and validation")
+    AWS_REGION: str = Field("us-west-2", description="AWS region used by application services")
+    REPORTS_BUCKET: Optional[str] = Field(None, description="Private S3 bucket for production report PDFs")
+    REPORTS_STORAGE_DIR: str = Field("/app/storage/reports", description="Local report directory used outside S3")
 
     class Config:
         env_file = ".env"

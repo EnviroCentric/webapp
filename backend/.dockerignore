@@ -1,0 +1,13 @@
+.env
+.env.*
+!.env.example
+.coverage
+.pytest_cache/
+__pycache__/
+*.py[cod]
+storage/
+tests/
+app_legacy/
+Dockerfile.dev
+pytest.ini
+TESTING_RULES.md

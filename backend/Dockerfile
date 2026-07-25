@@ -5,8 +5,8 @@ WORKDIR /app
 # Set PYTHONPATH to ensure proper module resolution
 ENV PYTHONPATH=/app
 
-RUN apt-get update && apt-get install -y \
-    libpq-dev gcc postgresql-client && \
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev gcc postgresql-client curl && \
     rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
@@ -15,9 +15,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
-# Make the startup script executable
-RUN chmod +x /app/scripts/start.sh
-
 EXPOSE 8000
 
-CMD ["sh", "/app/scripts/start.sh"] 
+HEALTHCHECK --interval=30s --timeout=5s --start-period=30s --retries=3 \
+  CMD curl --fail http://localhost:8000/health || exit 1
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--forwarded-allow-ips=*"]

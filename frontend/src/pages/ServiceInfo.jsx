@@ -303,9 +303,12 @@ export default function ServiceInfo() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="relative flex gap-8 md:gap-16">
           {/* Left: sticky vertical line + dots nav (hidden on very small screens) */}
-          <div className="hidden md:flex flex-col fixed left-6 top-100 bottom-40 items-center pointer-events-none">
-            {/* Vertically centered within the services band */}
-            <div className="flex flex-col items-end pointer-events-auto">
+          <div className="hidden md:block w-0 flex-none self-stretch pointer-events-none">
+            {/* Stay visible while scrolling, but remain within the services band. */}
+            <div
+              className="sticky top-24 flex w-max flex-col items-end pointer-events-auto"
+              style={{ marginLeft: 'calc(-1 * max(0px, (100vw - 1280px) / 2) - 8px)' }}
+            >
               <div className="relative h-[260px] lg:h-[320px] flex flex-col items-center">
                 {/* Vertical line centered on circles */}
                 <div className="pointer-events-none absolute left-3 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />

@@ -6,7 +6,7 @@ import uuid
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from asyncpg import Pool
 
 from app.core.deps import get_db, get_current_active_user, require_manager_plus
@@ -18,6 +18,7 @@ from app.schemas.report import (
 )
 from app.services.reports import ReportService
 from app.services.roles import get_user_role_level
+from app.services.report_storage import report_storage
 from app.db.queries.manager import query_manager
 
 router = APIRouter(
@@ -28,9 +29,6 @@ router = APIRouter(
 
 def get_report_service(db: Pool = Depends(get_db)) -> ReportService:
     return ReportService(db)
-
-
-REPORTS_STORAGE_DIR = Path(os.getenv("REPORTS_STORAGE_DIR", "/app/storage/reports"))
 
 
 @router.get("/locations")
@@ -111,16 +109,11 @@ async def upload_report_pdf(
             detail="Uploaded file does not appear to be a PDF",
         )
 
-    REPORTS_STORAGE_DIR.mkdir(parents=True, exist_ok=True)
-    project_dir = REPORTS_STORAGE_DIR / str(project_id)
-    project_dir.mkdir(parents=True, exist_ok=True)
-
     stored_name = f"{uuid.uuid4().hex}.pdf"
     rel_path = str(Path(str(project_id)) / stored_name)
-    abs_path = REPORTS_STORAGE_DIR / rel_path
 
     try:
-        abs_path.write_bytes(report_bytes)
+        report_storage.put(rel_path, report_bytes)
     except Exception:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to save file")
 
@@ -148,7 +141,7 @@ async def upload_report_pdf(
     if not row:
         # best-effort cleanup
         try:
-            abs_path.unlink(missing_ok=True)
+            report_storage.delete(rel_path)
         except Exception:
             pass
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to create report")
@@ -206,14 +199,20 @@ async def download_report_pdf(
     if not rel_path:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report file not available")
 
-    abs_path = REPORTS_STORAGE_DIR / rel_path
-    if not abs_path.exists():
+    try:
+        content, content_length = report_storage.stream(rel_path)
+    except FileNotFoundError:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report file not found")
+    except Exception:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail="Report storage unavailable")
 
-    return FileResponse(
-        path=str(abs_path),
+    headers = {"Content-Disposition": f'attachment; filename="{os.path.basename(rel_path)}"'}
+    if content_length is not None:
+        headers["Content-Length"] = str(content_length)
+    return StreamingResponse(
+        content,
         media_type="application/pdf",
-        filename=os.path.basename(rel_path),
+        headers=headers,
     )
 
 

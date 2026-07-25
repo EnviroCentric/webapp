@@ -165,4 +165,9 @@ async def shutdown_event():
 async def root():
     return {"message": "Welcome to the API"}
 
+@app.get("/health", include_in_schema=False)
+async def health():
+    """Lightweight container and reverse-proxy health check."""
+    return {"status": "ok"}
+
 logging.getLogger("passlib.handlers.bcrypt").setLevel(logging.ERROR)

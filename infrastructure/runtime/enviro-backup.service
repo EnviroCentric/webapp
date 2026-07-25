@@ -1,0 +1,9 @@
+[Unit]
+Description=Enviro-Centric PostgreSQL backup to S3
+Requires=docker.service
+After=docker.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/enviro-centric/backup-postgres.sh
+User=root

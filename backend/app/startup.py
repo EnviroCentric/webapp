@@ -1,12 +1,17 @@
 import asyncio
 import socket
 import logging
+from urllib.parse import urlparse
 from app.db.migrate import run_migrations
+from app.core.config import settings
 
 logger = logging.getLogger(__name__)
 
-async def wait_for_db(host: str = "db", port: int = 5432, timeout: int = 30):
+async def wait_for_db(host: str | None = None, port: int | None = None, timeout: int = 60):
     """Wait for the database to be ready."""
+    parsed = urlparse(settings.get_database_url)
+    host = host or parsed.hostname or "db"
+    port = port or parsed.port or 5432
     start_time = asyncio.get_event_loop().time()
     while True:
         try:
@@ -27,7 +32,7 @@ async def wait_for_db(host: str = "db", port: int = 5432, timeout: int = 30):
         if asyncio.get_event_loop().time() - start_time > timeout:
             raise TimeoutError(f"Database not ready after {timeout} seconds")
             
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(1)
 
 async def startup():
     """Run startup tasks."""
@@ -44,4 +49,4 @@ async def startup():
         
     except Exception as e:
         logger.error(f"Startup failed: {e}")
-        raise 
+        raise

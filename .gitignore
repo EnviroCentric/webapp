@@ -10,5 +10,14 @@ __pycache__/
 *.pyzw
 website-db-revamp/
 
+# AWS deployment inputs and secret-bearing local files
+env/aws/*.local.*
+env/aws/*.env
+env/aws/*.secret.*
+env/aws/*export*
+*.local.json
+!env/aws/*.example
+!env/aws/*.example.*
+
 # Uploaded files / local storage
 backend/storage/
