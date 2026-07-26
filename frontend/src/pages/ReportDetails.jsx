@@ -79,6 +79,17 @@ export default function ReportDetails() {
 
   const uploader = useMemo(() => getUploaderDisplayName(report), [report]);
   const technician = useMemo(() => getTechnicianDisplayName(report), [report]);
+  const roleLevel = Math.max(Number(user?.highest_level || 0), ...((user?.roles || []).map(r => Number(r.level || 0))));
+  const canEditDraft = !isClient && !report?.is_final && !!report?.report_data?.samples && (user?.is_superuser || roleLevel >= 60);
+  const canFinalize = !isClient && !report?.is_final && (user?.is_superuser || roleLevel >= 80);
+  const finalizeReport = async () => {
+    try {
+      await api.post(`/api/v1/reports/${reportId}/finalize`);
+      setReport((current) => ({ ...current, is_final: true, client_visible: true }));
+    } catch (err) {
+      setError(err.response?.data?.detail || 'Failed to finalize report');
+    }
+  };
 
   const dateLabel = useMemo(
     () => formatShortDate(report?.report_date || report?.generated_at),
@@ -109,6 +120,9 @@ export default function ReportDetails() {
           ← Back
         </button>
 
+        <div className="flex gap-2">
+        {canEditDraft && <button type="button" onClick={() => navigate(`/reports/create?reportId=${reportId}`)} className="px-4 py-2 rounded-md bg-blue-600 text-white">Edit Draft</button>}
+        {canFinalize && <button type="button" onClick={finalizeReport} className="px-4 py-2 rounded-md bg-green-600 text-white">Finalize</button>}
         {report?.project_id && (
           <button
             type="button"
@@ -118,6 +132,7 @@ export default function ReportDetails() {
             Open Project
           </button>
         )}
+        </div>
       </div>
 
       <div className="mb-6">

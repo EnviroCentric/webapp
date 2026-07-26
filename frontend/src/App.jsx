@@ -23,6 +23,7 @@ import CompanyReports from './pages/CompanyReports';
 import CompanyDashboard from './pages/CompanyDashboard';
 import ReportUpload from './pages/ReportUpload';
 import ReportDetails from './pages/ReportDetails';
+import ReportCreator from './pages/ReportCreator';
 import AdminPortal from './pages/AdminPortal';
 
 import { RolesProvider } from './context/RolesContext';
@@ -152,6 +153,14 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <ReportUpload />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/reports/create"
+                    element={
+                      <ProtectedRoute>
+                        <ReportCreator />
                       </ProtectedRoute>
                     }
                   />

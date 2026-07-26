@@ -3,11 +3,13 @@ from datetime import date
 import os
 import json
 import uuid
+import base64
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, status, Query, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from asyncpg import Pool
+from pydantic import BaseModel
 
 from app.core.deps import get_db, get_current_active_user, require_manager_plus
 from app.schemas.user import UserResponse
@@ -17,6 +19,10 @@ from app.schemas.report import (
     ReportDashboardResponse, ReportFormat
 )
 from app.services.reports import ReportService
+from app.services.air_reports import (
+    AirReportPayload, calculate_report, decode_signature, render_report_pdf,
+    safe_report_filename,
+)
 from app.services.roles import get_user_role_level
 from app.db.queries.manager import query_manager
 
@@ -31,6 +37,223 @@ def get_report_service(db: Pool = Depends(get_db)) -> ReportService:
 
 
 REPORTS_STORAGE_DIR = Path(os.getenv("REPORTS_STORAGE_DIR", "/app/storage/reports"))
+
+
+class AnalystSignatureUpdate(BaseModel):
+    analyst_user_id: int
+    signature_data_url: str
+
+
+async def require_analyst_permission(
+    current_user: UserResponse = Depends(get_current_active_user),
+    db: Pool = Depends(get_db),
+) -> UserResponse:
+    role_level = await get_user_role_level(db, current_user.id)
+    if role_level < 60 and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Only analysts and higher can generate reports")
+    return current_user
+
+
+async def _air_report_context(db: Pool, payload: AirReportPayload):
+    project = await db.fetchrow(
+        """SELECT p.id, p.name, p.company_id, c.name AS client_name,
+                  c.address_line1, c.address_line2, c.city, c.state, c.zip
+           FROM projects p LEFT JOIN companies c ON c.id = p.company_id WHERE p.id = $1""",
+        payload.project_id,
+    )
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    if not project["company_id"] or not project["client_name"]:
+        raise HTTPException(
+            status_code=422,
+            detail="Project must be assigned to a client company before creating a report",
+        )
+    analyst = await db.fetchrow(
+        """SELECT id, first_name, last_name, highest_level, is_superuser, analyst_signature
+           FROM users WHERE id = $1 AND is_active = TRUE""",
+        payload.analyst_user_id,
+    )
+    if not analyst:
+        raise HTTPException(status_code=422, detail="Analyst not found")
+    if not analyst["is_superuser"] and int(analyst["highest_level"] or 0) < 60:
+        raise HTTPException(status_code=422, detail="Selected user is not an analyst")
+    client_address = ", ".join(filter(None, [
+        " ".join(filter(None, [project["address_line1"], project["address_line2"]])),
+        project["city"],
+        " ".join(filter(None, [project["state"], project["zip"]])),
+    ]))
+    return project, analyst, client_address
+
+
+async def _build_air_report(db: Pool, payload: AirReportPayload, current_user: UserResponse):
+    project, analyst, client_address = await _air_report_context(db, payload)
+    calculated = calculate_report(payload)
+    supplied_signature = decode_signature(payload.signature_data_url)
+    signature = supplied_signature or analyst["analyst_signature"]
+    role_level = await get_user_role_level(db, current_user.id)
+    if not current_user.is_superuser and role_level < 90:
+        assigned = await db.fetchval(
+            query_manager.check_technician_assigned_to_project,
+            payload.project_id,
+            current_user.id,
+        )
+        if not assigned:
+            raise HTTPException(status_code=403, detail="You must be assigned to this project")
+    if payload.save_signature_as_default and supplied_signature:
+        if payload.analyst_user_id != current_user.id and role_level < 80 and not current_user.is_superuser:
+            raise HTTPException(status_code=403, detail="Only supervisors can save another analyst's signature")
+        await db.execute("UPDATE users SET analyst_signature = $2 WHERE id = $1", payload.analyst_user_id, supplied_signature)
+    analyst_name = f'{analyst["first_name"]} {analyst["last_name"]}'.title()
+    pdf = render_report_pdf(
+        calculated,
+        client_name=project["client_name"],
+        client_address=client_address,
+        project_name=project["name"],
+        analyst_name=analyst_name,
+        signature_bytes=signature,
+    )
+    calculated["analyst_name"] = analyst_name
+    calculated["signature_snapshot"] = (
+        "data:image/png;base64," + base64.b64encode(signature).decode("ascii")
+        if signature else None
+    )
+    return calculated, pdf
+
+
+def _write_report_pdf(project_id: int, pdf: bytes, existing_path: str | None = None) -> str:
+    project_dir = REPORTS_STORAGE_DIR / str(project_id)
+    project_dir.mkdir(parents=True, exist_ok=True)
+    rel_path = existing_path or str(Path(str(project_id)) / f"{uuid.uuid4().hex}.pdf")
+    (REPORTS_STORAGE_DIR / rel_path).write_bytes(pdf)
+    return rel_path
+
+
+@router.get("/air-sample/options")
+async def get_air_report_options(
+    current_user: UserResponse = Depends(require_analyst_permission),
+    db: Pool = Depends(get_db),
+):
+    """Return active technicians/analysts and whether they have saved signatures."""
+    rows = await db.fetch(
+        """SELECT u.id, u.first_name, u.last_name, u.highest_level,
+                  u.analyst_signature
+           FROM users u WHERE u.is_active = TRUE AND (u.is_superuser OR u.highest_level >= 50)
+           ORDER BY u.first_name, u.last_name"""
+    )
+    options = []
+    for row in rows:
+        signature = row["analyst_signature"]
+        mime = "image/jpeg" if signature and signature.startswith(b"\xff\xd8\xff") else "image/png"
+        options.append({
+            "id": row["id"],
+            "first_name": row["first_name"],
+            "last_name": row["last_name"],
+            "highest_level": row["highest_level"],
+            "has_signature": signature is not None,
+            "signature_data_url": (
+                f"data:{mime};base64,{base64.b64encode(signature).decode('ascii')}"
+                if signature else None
+            ),
+            "name": f'{row["first_name"]} {row["last_name"]}'.title(),
+        })
+    return options
+
+
+@router.put("/air-sample/signature")
+async def save_analyst_signature(
+    payload: AnalystSignatureUpdate,
+    current_user: UserResponse = Depends(require_analyst_permission),
+    db: Pool = Depends(get_db),
+):
+    role_level = await get_user_role_level(db, current_user.id)
+    if payload.analyst_user_id != current_user.id and role_level < 80 and not current_user.is_superuser:
+        raise HTTPException(status_code=403, detail="Only supervisors can save another analyst's signature")
+
+    analyst_exists = await db.fetchval(
+        """SELECT EXISTS(
+               SELECT 1 FROM users
+               WHERE id = $1 AND is_active = TRUE
+                 AND (is_superuser = TRUE OR highest_level >= 60)
+           )""",
+        payload.analyst_user_id,
+    )
+    if not analyst_exists:
+        raise HTTPException(status_code=404, detail="Analyst not found")
+
+    try:
+        signature = decode_signature(payload.signature_data_url)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    if not signature:
+        raise HTTPException(status_code=422, detail="Draw a signature before saving")
+
+    await db.execute(
+        "UPDATE users SET analyst_signature = $2 WHERE id = $1",
+        payload.analyst_user_id,
+        signature,
+    )
+    return {"analyst_user_id": payload.analyst_user_id, "signature_data_url": payload.signature_data_url}
+
+
+@router.post("/air-sample/drafts", response_model=LegacyReportResponse, status_code=201)
+async def create_air_report_draft(
+    payload: AirReportPayload,
+    current_user: UserResponse = Depends(require_analyst_permission),
+    db: Pool = Depends(get_db),
+):
+    try:
+        calculated, pdf = await _build_air_report(db, payload, current_user)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    rel_path = _write_report_pdf(payload.project_id, pdf)
+    filename = safe_report_filename(payload.formatted_address, payload.report_date)
+    row = await db.fetchrow(
+        query_manager.create_uploaded_report,
+        payload.project_id, filename[:-4], payload.report_kind, date.fromisoformat(payload.report_date),
+        payload.formatted_address, payload.google_place_id, payload.latitude, payload.longitude,
+        payload.location_label, payload.worker_name, payload.technician_user_id,
+        payload.technician_name, rel_path, current_user.id, json.dumps(calculated),
+        False, False, payload.notes,
+    )
+    data = dict(row)
+    data["report_data"] = calculated
+    return LegacyReportResponse(**data)
+
+
+@router.put("/{report_id}/air-sample", response_model=LegacyReportResponse)
+async def update_air_report_draft(
+    report_id: int,
+    payload: AirReportPayload,
+    current_user: UserResponse = Depends(require_analyst_permission),
+    db: Pool = Depends(get_db),
+):
+    existing = await db.fetchrow("SELECT * FROM reports WHERE id = $1", report_id)
+    if not existing:
+        raise HTTPException(status_code=404, detail="Report not found")
+    if existing["is_final"]:
+        raise HTTPException(status_code=409, detail="Finalized reports are immutable")
+    if existing["project_id"] != payload.project_id:
+        raise HTTPException(status_code=422, detail="A draft cannot be moved to another project")
+    try:
+        calculated, pdf = await _build_air_report(db, payload, current_user)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    rel_path = _write_report_pdf(payload.project_id, pdf, existing["report_file_path"])
+    filename = safe_report_filename(payload.formatted_address, payload.report_date)
+    row = await db.fetchrow(
+        """UPDATE reports SET project_id=$2, report_name=$3, report_kind=$4, report_date=$5,
+                  formatted_address=$6, google_place_id=$7, latitude=$8, longitude=$9,
+                  location_label=$10, worker_name=$11, technician_user_id=$12,
+                  technician_name=$13, report_file_path=$14, report_data=$15::jsonb, notes=$16
+           WHERE id=$1 RETURNING *""",
+        report_id, payload.project_id, filename[:-4], payload.report_kind, date.fromisoformat(payload.report_date),
+        payload.formatted_address, payload.google_place_id, payload.latitude, payload.longitude,
+        payload.location_label, payload.worker_name, payload.technician_user_id,
+        payload.technician_name, rel_path, json.dumps(calculated), payload.notes,
+    )
+    data = dict(row)
+    data["report_data"] = calculated
+    return LegacyReportResponse(**data)
 
 
 @router.get("/locations")
@@ -188,6 +411,8 @@ async def download_report_pdf(
     if current_user.company_id is not None:
         if current_user.company_id != project_company_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        if not report.get("is_final") or not report.get("client_visible"):
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Report is not available to clients")
     else:
         # Employee users
         if role_level < 50 and not current_user.is_superuser:
@@ -210,10 +435,15 @@ async def download_report_pdf(
     if not abs_path.exists():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Report file not found")
 
+    download_name = safe_report_filename(
+        report.get("formatted_address") or report.get("report_name") or "report",
+        str(report.get("report_date") or report.get("generated_at").date()),
+    )
     return FileResponse(
         path=str(abs_path),
         media_type="application/pdf",
-        filename=os.path.basename(rel_path),
+        filename=download_name,
+        headers={"Cache-Control": "private, no-store"},
     )
 
 
@@ -267,6 +497,8 @@ async def get_report(
     if current_user.company_id is not None:
         if current_user.company_id != project_company_id:
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
+        if not report.is_final or not report.client_visible:
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Report is not available to clients")
         return report
 
     # Employee users
@@ -299,6 +531,12 @@ async def update_report(
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Only analysts and higher can update reports"
+        )
+    existing = await report_service.get_report_by_id(report_id)
+    if existing and existing.is_final:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Finalized reports are immutable; a supervisor must return the report to draft first",
         )
     
     updated_report = await report_service.update_report(report_id, report_in)
@@ -457,20 +695,6 @@ async def get_address_reports(
 
 # Report generation endpoints
 
-# Permission dependency to check analyst level before request validation
-async def require_analyst_permission(
-    current_user: UserResponse = Depends(get_current_active_user),
-    db: Pool = Depends(get_db)
-) -> UserResponse:
-    """Dependency that checks if user has analyst level or above."""
-    role_level = await get_user_role_level(db, current_user.id)
-    if role_level < 60:  # Analyst level required
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Only analysts and higher can generate reports"
-        )
-    return current_user
-
 @router.post("/generate", response_model=LegacyReportResponse, status_code=status.HTTP_201_CREATED)
 async def generate_project_report(
     request: ReportGenerationRequest,
@@ -586,7 +810,7 @@ async def get_client_reports(
     
     # Clients can access all reports for projects under their company
     reports = await report_service.get_company_reports(current_user.company_id)
-    return reports
+    return [r for r in reports if r.is_final and r.client_visible]
 
 
 @router.get("/client/projects/{project_id}/reports", response_model=List[LegacyReportResponse])
@@ -611,4 +835,4 @@ async def get_client_project_reports(
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access denied")
 
     reports = await report_service.get_project_reports(project_id)
-    return [r for r in reports]
+    return [r for r in reports if r.is_final and r.client_visible]

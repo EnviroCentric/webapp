@@ -1,4 +1,8 @@
-from app.services.users import UserService
-from app.services.roles import RoleService
+"""Service package.
 
-__all__ = ['UserService', 'RoleService'] 
+Services are intentionally imported from their concrete modules. Avoid eager
+imports here so calculation/rendering utilities can run without initializing
+database and authentication configuration.
+"""
+
+__all__ = []

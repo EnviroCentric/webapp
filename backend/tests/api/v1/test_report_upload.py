@@ -100,6 +100,8 @@ async def test_manager_can_upload_pdf_and_client_can_download(
     dl = await client.get(f"/api/v1/reports/{report['id']}/download", headers=client_headers)
     assert dl.status_code == status.HTTP_200_OK
     assert dl.headers.get("content-type", "").startswith("application/pdf")
+    assert ".pdf" in dl.headers.get("content-disposition", "").lower()
+    assert int(dl.headers["content-length"]) == len(dl.content)
     assert dl.content.startswith(b"%PDF")
 
 
@@ -139,6 +141,35 @@ async def test_client_can_download_reports_regardless_of_visibility_or_final_fla
 
     dl = await client.get(f"/api/v1/reports/{report_id}/download", headers=client_headers)
     assert dl.status_code == status.HTTP_200_OK
+
+
+async def test_client_cannot_download_draft_by_direct_url(
+    client: AsyncClient,
+    admin_token_headers: dict,
+    manager_token_headers: dict,
+    db_pool,
+):
+    company, project = await _create_company_and_project(client, admin_token_headers)
+    password = await _create_client_user(
+        client, admin_token_headers, company_id=company["id"], email="draft-client@acme.com"
+    )
+    client_headers = await _login(client, email="draft-client@acme.com", password=password)
+    created = await client.post(
+        "/api/v1/reports/upload",
+        data={
+            "project_id": str(project["id"]), "report_kind": "area",
+            "report_date": "2026-02-24", "formatted_address": "123 Main St, Testville, TX 00000",
+            "google_place_id": "place_123",
+        },
+        files={"file": ("report.pdf", b"%PDF-1.4\n%%EOF\n", "application/pdf")},
+        headers=manager_token_headers,
+    )
+    report_id = created.json()["id"]
+    await db_pool.execute(
+        "UPDATE reports SET is_final = FALSE, client_visible = FALSE WHERE id = $1", report_id
+    )
+    denied = await client.get(f"/api/v1/reports/{report_id}/download", headers=client_headers)
+    assert denied.status_code == status.HTTP_403_FORBIDDEN
 
 
 async def test_client_cannot_upload_report(

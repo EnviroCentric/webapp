@@ -9,6 +9,7 @@ import {
   getTechnicianDisplayName,
   getUploaderDisplayName,
 } from '../utils/reportUtils';
+import { downloadPdf } from '../utils/downloadPdf';
 
 export default function ProjectReports() {
   const { projectId } = useParams();
@@ -34,6 +35,7 @@ export default function ProjectReports() {
   const hasClientRole = user?.roles?.some(role => (role.name || '').toLowerCase() === 'client');
   const isClient = !!(hasClientRole && user?.company_id && !user?.is_superuser);
   const isManagerOrHigher = (user?.is_superuser || userRoleLevel >= 90);
+  const isAnalystOrHigher = (user?.is_superuser || userRoleLevel >= 60);
 
   useEffect(() => {
     if (!isTechnicianOrHigher && !isClient) {
@@ -92,22 +94,8 @@ export default function ProjectReports() {
       setError('');
       setDownloadingReportId(report.id);
 
-      const response = await api.get(`/api/v1/reports/${report.id}/download`, {
-        responseType: 'blob',
-      });
-
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-
       const base = getReportDownloadFilename(report) || `report_${report.id}`;
-      a.download = base.toLowerCase().endsWith('.pdf') ? base : `${base}.pdf`;
-
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      await downloadPdf(api, `/api/v1/reports/${report.id}/download`, base);
     } catch (err) {
       console.error('Error downloading report:', err);
       setError('Failed to download report');
@@ -225,6 +213,16 @@ export default function ProjectReports() {
             <div className="mt-1 text-sm text-gray-600 dark:text-gray-400">{project.name}</div>
           )}
         </div>
+        <div className="flex gap-2">
+        {isAnalystOrHigher && (
+          <button
+            type="button"
+            onClick={() => navigate(`/reports/create?projectId=${projectId}`)}
+            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700"
+          >
+            Create Report
+          </button>
+        )}
         {isManagerOrHigher && (
           <button
             type="button"
@@ -234,6 +232,7 @@ export default function ProjectReports() {
             Upload Report
           </button>
         )}
+        </div>
       </div>
 
       {/* Search + filters */}
