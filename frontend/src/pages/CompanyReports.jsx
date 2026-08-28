@@ -10,6 +10,7 @@ import {
   getTechnicianDisplayName,
   getUploaderDisplayName,
 } from '../utils/reportUtils';
+import { downloadPdf } from '../utils/downloadPdf';
 
 export default function CompanyReports() {
   const { companyId } = useParams();
@@ -87,22 +88,8 @@ export default function CompanyReports() {
       setError('');
       setDownloadingReportId(report.id);
 
-      const response = await api.get(`/api/v1/reports/${report.id}/download`, {
-        responseType: 'blob',
-      });
-
-      const blob = new Blob([response.data], { type: 'application/pdf' });
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-
       const base = getReportDownloadFilename(report) || `report_${report.id}`;
-      a.download = base.toLowerCase().endsWith('.pdf') ? base : `${base}.pdf`;
-
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      window.URL.revokeObjectURL(url);
+      await downloadPdf(api, `/api/v1/reports/${report.id}/download`, base);
     } catch (err) {
       console.error('Error downloading report:', err);
       setError('Failed to download report');

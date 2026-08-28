@@ -11,6 +11,7 @@ const navigation = [
   { name: "Dashboard", href: "/dashboard", requiresTechnician: true },
   { name: "Projects", href: "/projects", requiresSupervisor: true },
   { name: "Companies", href: "/companies", requiresSupervisor: true },
+  { name: "Report Maker", href: "/reports/create", requiresAnalyst: true },
   { name: "My Company", href: "/company/me", requiresClient: true },
   { name: "Upload Report", href: "/reports/upload", requiresManager: true },
   { name: "Admin", href: "/admin", requiresAdmin: true },
@@ -117,6 +118,9 @@ export default function Navbar() {
                       }
                       if (item.requiresManager) {
                         return userRoleLevel >= 90;
+                      }
+                      if (item.requiresAnalyst) {
+                        return userRoleLevel >= 60 || isSuperuser;
                       }
                       if (item.requiresSupervisor) {
                         return userRoleLevel >= 80; // Supervisor level is 80
@@ -241,6 +245,9 @@ export default function Navbar() {
                   }
                   if (item.requiresManager) {
                     return userRoleLevel >= 90;
+                  }
+                  if (item.requiresAnalyst) {
+                    return userRoleLevel >= 60 || isSuperuser;
                   }
                   if (item.requiresSupervisor) {
                     return userRoleLevel >= 80;
