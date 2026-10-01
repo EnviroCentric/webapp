@@ -8,7 +8,7 @@ from app.db.session import get_db
 from app.core.security import get_current_user, get_password_hash
 from app.core.deps import require_admin
 from app.core.validators import validate_password
-from app.schemas.user import UserResponse, UserCreate, UserUpdate, SelfUserUpdate, PasswordUpdate, EmployeeResponse
+from app.schemas.user import CountHelperPreferences, UserResponse, UserCreate, UserUpdate, SelfUserUpdate, PasswordUpdate, EmployeeResponse
 from app.schemas.role import RoleInDB  # <- use your Role schema for stronger typing
 from app.services.users import UserService
 from app.db.queries.manager import query_manager
@@ -172,6 +172,24 @@ async def change_password(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Failed to update password")
     
     return {"message": "Password updated successfully"}
+
+
+@router.put("/me/count-helper-preferences", response_model=CountHelperPreferences)
+async def update_count_helper_preferences(
+    preferences: CountHelperPreferences,
+    current_user: dict = Depends(get_current_user),
+    db: asyncpg.Pool = Depends(get_db),
+):
+    """Update the authenticated user's Count Helper sound preferences."""
+    updated = await db.fetchrow(
+        query_manager.update_count_helper_preferences,
+        current_user["id"],
+        preferences.count_feedback_sound_enabled,
+        preferences.count_completion_sound_enabled,
+    )
+    if not updated:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+    return CountHelperPreferences(**dict(updated))
 
 
 # ---------- single resource ----------

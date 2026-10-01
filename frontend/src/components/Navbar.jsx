@@ -12,6 +12,7 @@ const navigation = [
   { name: "Projects", href: "/projects", requiresSupervisor: true },
   { name: "Companies", href: "/companies", requiresSupervisor: true },
   { name: "Report Maker", href: "/reports/create", requiresAnalyst: true },
+  { name: "Count Helper", href: "/count-helper", requiresLabTech: true },
   { name: "My Company", href: "/company/me", requiresClient: true },
   { name: "Upload Report", href: "/reports/upload", requiresManager: true },
   { name: "Admin", href: "/admin", requiresAdmin: true },
@@ -120,6 +121,9 @@ export default function Navbar() {
                         return userRoleLevel >= 90;
                       }
                       if (item.requiresAnalyst) {
+                        return userRoleLevel >= 60 || isSuperuser;
+                      }
+                      if (item.requiresLabTech) {
                         return userRoleLevel >= 60 || isSuperuser;
                       }
                       if (item.requiresSupervisor) {
@@ -247,6 +251,9 @@ export default function Navbar() {
                     return userRoleLevel >= 90;
                   }
                   if (item.requiresAnalyst) {
+                    return userRoleLevel >= 60 || isSuperuser;
+                  }
+                  if (item.requiresLabTech) {
                     return userRoleLevel >= 60 || isSuperuser;
                   }
                   if (item.requiresSupervisor) {

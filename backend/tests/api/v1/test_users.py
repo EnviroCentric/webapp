@@ -147,3 +147,24 @@ async def test_update_me_email_already_taken(client: AsyncClient, admin_token_he
         headers=normal_user_token_headers,
     )
     assert resp.status_code == status.HTTP_400_BAD_REQUEST
+
+
+async def test_user_can_save_count_helper_sound_preferences(client: AsyncClient, normal_user_token_headers: dict):
+    resp = await client.put(
+        "/api/v1/users/me/count-helper-preferences",
+        json={
+            "count_feedback_sound_enabled": False,
+            "count_completion_sound_enabled": True,
+        },
+        headers=normal_user_token_headers,
+    )
+    assert resp.status_code == status.HTTP_200_OK, resp.text
+    assert resp.json() == {
+        "count_feedback_sound_enabled": False,
+        "count_completion_sound_enabled": True,
+    }
+
+    profile = await client.get("/api/v1/users/me", headers=normal_user_token_headers)
+    assert profile.status_code == status.HTTP_200_OK
+    assert profile.json()["count_feedback_sound_enabled"] is False
+    assert profile.json()["count_completion_sound_enabled"] is True

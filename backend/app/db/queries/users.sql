@@ -12,6 +12,8 @@ SELECT
   highest_level,
   must_change_password,
   password_set_at,
+  count_feedback_sound_enabled,
+  count_completion_sound_enabled,
   created_at,
   updated_at
 FROM users
@@ -37,6 +39,8 @@ SELECT
   u.highest_level,
   u.must_change_password,
   u.password_set_at,
+  u.count_feedback_sound_enabled,
+  u.count_completion_sound_enabled,
   u.created_at,
   u.updated_at,
   COALESCE(
@@ -72,6 +76,8 @@ SELECT
   u.highest_level,
   u.must_change_password,
   u.password_set_at,
+  u.count_feedback_sound_enabled,
+  u.count_completion_sound_enabled,
   u.created_at,
   u.updated_at,
   COALESCE(
@@ -145,6 +151,8 @@ RETURNING
   highest_level,
   must_change_password,
   password_set_at,
+  count_feedback_sound_enabled,
+  count_completion_sound_enabled,
   created_at,
   updated_at;
 
@@ -200,6 +208,15 @@ SET
   updated_at = CURRENT_TIMESTAMP
 WHERE id = $1;
 
+-- name: update_count_helper_preferences
+UPDATE users
+SET
+  count_feedback_sound_enabled = $2,
+  count_completion_sound_enabled = $3,
+  updated_at = CURRENT_TIMESTAMP
+WHERE id = $1
+RETURNING count_feedback_sound_enabled, count_completion_sound_enabled;
+
 -- name: get_users_by_min_role_level
 SELECT
   u.id,
@@ -214,6 +231,8 @@ SELECT
   u.highest_level,
   u.must_change_password,
   u.password_set_at,
+  u.count_feedback_sound_enabled,
+  u.count_completion_sound_enabled,
   u.created_at,
   u.updated_at,
   COALESCE(

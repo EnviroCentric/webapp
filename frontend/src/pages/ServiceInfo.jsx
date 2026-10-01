@@ -1,10 +1,9 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 
 export default function ServiceInfo() {
   const location = useLocation();
   const [activeServiceId, setActiveServiceId] = useState('asbestos');
-  const isProgrammaticScrollRef = useRef(false);
 
   // Scroll to section based on hash in URL
   useEffect(() => {
@@ -23,43 +22,39 @@ export default function ServiceInfo() {
     }
   }, [location]);
 
-  // Track which service section is currently in view so we can highlight/enlarge that dot
+  // Track the section nearest the upper-middle of the viewport.
   useEffect(() => {
     const sectionIds = ['asbestos', 'lead', 'microbial', 'hazardous-waste'];
     const sections = sectionIds
       .map((id) => document.getElementById(id))
       .filter(Boolean);
 
-    if (!sections.length || typeof IntersectionObserver === 'undefined') {
+    if (!sections.length) {
       return undefined;
     }
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (isProgrammaticScrollRef.current) {
-          // Ignore intersection updates triggered by our own smooth scroll
-          return;
-        }
+    let animationFrame;
+    const updateActiveSection = () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = requestAnimationFrame(() => {
+        const viewportAnchor = window.innerHeight * 0.35;
+        const closestSection = sections.reduce((closest, section) => {
+          const distance = Math.abs(section.getBoundingClientRect().top - viewportAnchor);
+          return distance < closest.distance ? { id: section.id, distance } : closest;
+        }, { id: sections[0].id, distance: Number.POSITIVE_INFINITY });
 
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        setActiveServiceId(closestSection.id);
+      });
+    };
 
-        if (visible[0]?.target?.id) {
-          setActiveServiceId(visible[0].target.id);
-        }
-      },
-      {
-        threshold: [0.3, 0.5, 0.7],
-        rootMargin: '-20% 0px -40% 0px',
-      }
-    );
-
-    sections.forEach((section) => observer.observe(section));
+    updateActiveSection();
+    window.addEventListener('scroll', updateActiveSection, { passive: true });
+    window.addEventListener('resize', updateActiveSection);
 
     return () => {
-      sections.forEach((section) => observer.unobserve(section));
-      observer.disconnect();
+      cancelAnimationFrame(animationFrame);
+      window.removeEventListener('scroll', updateActiveSection);
+      window.removeEventListener('resize', updateActiveSection);
     };
   }, []);
 
@@ -302,19 +297,19 @@ export default function ServiceInfo() {
       {/* Services Sections with vertical scroll navigation */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="relative flex gap-8 md:gap-16">
-          {/* Left: sticky vertical line + dots nav (hidden on very small screens) */}
-          <div className="hidden md:block w-0 flex-none self-stretch pointer-events-none">
+          {/* Left: responsive sticky table of contents */}
+          <div className="block w-0 flex-none self-stretch pointer-events-none">
             {/* Stay visible while scrolling, but remain within the services band. */}
             <div
-              className="sticky top-24 flex w-max flex-col items-end pointer-events-auto"
+              className="group/toc sticky top-24 z-20 flex w-10 flex-col overflow-hidden transition-[width] duration-300 hover:w-60 focus-within:w-60 pointer-events-auto xl:w-60"
               style={{ marginLeft: 'calc(-1 * max(0px, (100vw - 1280px) / 2) - 8px)' }}
             >
-              <div className="relative h-[260px] lg:h-[320px] flex flex-col items-center">
+              <div className="relative h-[220px] sm:h-[260px] lg:h-[320px] w-60 flex flex-col items-start">
                 {/* Vertical line centered on circles */}
-                <div className="pointer-events-none absolute left-3 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
+                <div className="pointer-events-none absolute left-4 top-0 bottom-0 w-px bg-gray-200 dark:bg-gray-700" />
 
                 {/* Dots + labels */}
-                <div className="flex flex-col justify-between h-full py-2 space-y-3">
+                <div className="flex w-full flex-col justify-between h-full py-2 pl-1 space-y-3">
                   {services.map((service) => {
                     const isActive = activeServiceId === service.id;
 
@@ -322,24 +317,21 @@ export default function ServiceInfo() {
                       <button
                         key={service.id}
                         type="button"
-                        onClick={() => {
+                        onClick={(event) => {
                           const el = document.getElementById(service.id);
                           if (el) {
-                            isProgrammaticScrollRef.current = true;
                             el.scrollIntoView({
                               behavior: 'smooth',
                               block: 'center',
                               inline: 'nearest',
                             });
-                            // Re-enable observer reactions shortly after the scroll finishes
-                            setTimeout(() => {
-                              isProgrammaticScrollRef.current = false;
-                            }, 700);
                           }
                           setActiveServiceId(service.id);
+                          event.currentTarget.blur();
                         }}
-                        className="relative flex items-center gap-3 group focus:outline-none text-left"
+                        className="relative flex w-full items-center gap-3 group focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-500 text-left"
                         aria-label={service.title}
+                        title={service.title}
                       >
                         {/* Fixed-size circle container so center stays on the line */}
                         <span className="relative flex items-center justify-center w-6 h-6">
@@ -353,7 +345,7 @@ export default function ServiceInfo() {
                         </span>
                         {/* Label to the right; does not affect circle alignment */}
                         <span
-                          className={`font-medium tracking-wide transition-all duration-300 ${
+                          className={`whitespace-nowrap font-medium tracking-wide opacity-0 transition-all duration-300 group-hover/toc:opacity-100 group-focus-within/toc:opacity-100 xl:opacity-100 ${
                             isActive
                               ? 'text-lg text-blue-700 dark:text-blue-300'
                               : 'text-sm text-gray-600 dark:text-gray-300 group-hover:text-blue-500'
@@ -370,7 +362,7 @@ export default function ServiceInfo() {
           </div>
 
           {/* Right: service content */}
-          <div className="flex-1 md:ml-24">
+          <div className="min-w-0 flex-1 ml-8 xl:ml-24">
             {services.map((service, index) => (
               <section
                 key={service.id}

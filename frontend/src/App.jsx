@@ -25,6 +25,8 @@ import ReportUpload from './pages/ReportUpload';
 import ReportDetails from './pages/ReportDetails';
 import ReportCreator from './pages/ReportCreator';
 import AdminPortal from './pages/AdminPortal';
+import CountHelper from './pages/CountHelper';
+import MinimumRoleRoute from './routes/MinimumRoleRoute';
 
 import { RolesProvider } from './context/RolesContext';
 import { PermissionsProvider } from './context/PermissionsContext';
@@ -169,6 +171,16 @@ function App() {
                     element={
                       <ProtectedRoute>
                         <ReportDetails />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/count-helper"
+                    element={
+                      <ProtectedRoute>
+                        <MinimumRoleRoute level={60}>
+                          <CountHelper />
+                        </MinimumRoleRoute>
                       </ProtectedRoute>
                     }
                   />

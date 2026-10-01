@@ -79,6 +79,11 @@ class PasswordUpdate(BaseModel):
         return v
 
 
+class CountHelperPreferences(BaseModel):
+    count_feedback_sound_enabled: bool
+    count_completion_sound_enabled: bool
+
+
 class UserResponse(UserBase):
     id: int
     company_id: Optional[int] = None
@@ -91,6 +96,8 @@ class UserResponse(UserBase):
     highest_level: int = 0
     must_change_password: bool = False
     password_set_at: Optional[datetime] = None
+    count_feedback_sound_enabled: bool = True
+    count_completion_sound_enabled: bool = True
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -155,5 +162,7 @@ class UserInDB(BaseModel):
     highest_level: int = 0
     must_change_password: bool = False
     password_set_at: Optional[datetime] = None
+    count_feedback_sound_enabled: bool = True
+    count_completion_sound_enabled: bool = True
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None

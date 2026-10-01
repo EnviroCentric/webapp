@@ -1,0 +1,3 @@
+ALTER TABLE users
+ADD COLUMN IF NOT EXISTS count_feedback_sound_enabled BOOLEAN NOT NULL DEFAULT TRUE,
+ADD COLUMN IF NOT EXISTS count_completion_sound_enabled BOOLEAN NOT NULL DEFAULT TRUE;
