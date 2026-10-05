@@ -1,16 +1,18 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 import Login from '../pages/Login';
+import ServicesMenu from './ServicesMenu';
 
 const navigation = [
   { name: "Home", href: "/" },
   { name: "Services", href: "/services" },
+  { name: "Projects", href: "/our-projects" },
   { name: "Contact", href: "/contact" },
   { name: "Resources", href: "/resources" },
   { name: "Dashboard", href: "/dashboard", requiresTechnician: true },
-  { name: "Projects", href: "/projects", requiresSupervisor: true },
+  { name: "Project Portal", href: "/projects", requiresSupervisor: true },
   { name: "Companies", href: "/companies", requiresSupervisor: true },
   { name: "Report Maker", href: "/reports/create", requiresAnalyst: true },
   { name: "Count Helper", href: "/count-helper", requiresLabTech: true },
@@ -30,11 +32,9 @@ export default function Navbar() {
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
   const navigate = useNavigate();
   const profileMenuRef = useRef(null);
 
-  const isHomePage = location.pathname === '/';
   const userRoles = user?.roles || [];
   const isSuperuser = user?.is_superuser || userRoles.some(role => (role.name || '').toLowerCase() === 'admin');
   const userRoleLevel = Math.max(0, ...(userRoles.map(role => role.level || 0)));
@@ -71,7 +71,7 @@ export default function Navbar() {
 
   return (
     <>
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white dark:bg-gray-800 shadow-md">
+      <nav className="fixed top-0 left-0 right-0 z-50 site-navbar shadow-md">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             {/* Logo and Navigation Links */}
@@ -93,7 +93,6 @@ export default function Navbar() {
                 )}
               </button>
 
-              {!isHomePage && (
                 <div className="flex-shrink-0">
                   <Link to="/" className="flex items-center">
                     <img
@@ -105,7 +104,6 @@ export default function Navbar() {
                     />
                   </Link>
                 </div>
-              )}
 
               {/* Navigation Links */}
               <div className="hidden md:block">
@@ -135,7 +133,7 @@ export default function Navbar() {
                       }
                       return true;
                     })
-                    .map((item) => (
+                    .map((item) => item.name === "Services" ? <ServicesMenu key={item.name}/> : (
                       <NavLink
                         key={item.name}
                         to={item.href}
@@ -238,7 +236,7 @@ export default function Navbar() {
 
         {/* Mobile menu dropdown */}
         {isMobileMenuOpen && (
-          <div className="md:hidden bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
+          <div className="md:hidden max-h-[calc(100dvh-4rem)] overflow-y-auto bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700">
             <div className="px-2 pt-2 pb-3 space-y-1">
               {navigation
                 .filter(item => {
@@ -265,7 +263,7 @@ export default function Navbar() {
                   }
                   return true;
                 })
-                .map((item) => (
+                .map((item) => item.name === "Services" ? <ServicesMenu key={item.name} mobile onNavigate={() => setIsMobileMenuOpen(false)}/> : (
                   <NavLink
                     key={item.name}
                     to={item.href}

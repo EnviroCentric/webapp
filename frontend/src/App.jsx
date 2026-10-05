@@ -1,9 +1,11 @@
 import './index.css';
-import { Routes, Route } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
+import LandscapeBackground from './components/LandscapeBackground';
 import Home from './pages/Home';
+import PublicProjects from './pages/PublicProjects';
 import ServiceInfo from './pages/ServiceInfo';
 import Contact from './pages/Contact';
 import Resources from './pages/Resources';
@@ -33,16 +35,20 @@ import { RolesProvider } from './context/RolesContext';
 import { PermissionsProvider } from './context/PermissionsContext';
 
 function App() {
+  const { pathname } = useLocation();
+  const hasSlideshow = pathname !== '/services';
   return (
     <AuthProvider>
       <RolesProvider>
         <PermissionsProvider>
           <ThemeProvider>
-            <div className="min-h-screen bg-gray-300 dark:bg-gray-900">
+            <div className={`min-h-screen ${hasSlideshow ? 'site-slideshow-shell' : 'bg-gray-300 dark:bg-gray-900'}`}>
+              {hasSlideshow && <LandscapeBackground timed />}
               <Navbar />
-              <main className="pt-16 pb-6 min-h-[calc(100vh-4rem)] bg-gray-300 dark:bg-gray-900">
+              <main className="pt-16 pb-6 min-h-[calc(100vh-4rem)]">
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/our-projects" element={<PublicProjects />} />
                   <Route path="/services" element={<ServiceInfo />} />
                   <Route path="/contact" element={<Contact />} />
                   <Route path="/resources" element={<Resources />} />

@@ -1,47 +1,30 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
+import ServiceIcon from '../components/ServiceIcon';
+import ContactBanner from '../components/ContactBanner';
 
 export default function Home() {
 
 
   return (
-    <div className="min-h-screen bg-gray-300 dark:bg-gray-900 transition-colors duration-200">
-      {/* Large Logo Section with Background */}
-      <div
-        className="relative flex justify-center items-center min-h-[40vh] sm:min-h-[45vh] lg:min-h-[50vh] py-8"
-        style={{
-          backgroundImage: "url('/sequoia.jpg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
-      >
-        <div className="absolute inset-0 bg-gray-900/70"></div>
-        <img
-          src={logo}
-          alt="Enviro-Centric Logo"
-          className="relative z-10 max-w-[85vw] sm:max-w-lg md:max-w-xl lg:max-w-2xl h-auto"
-          loading="eager"
-          decoding="async"
-        />
-      </div>
-
+    <div className="landscape-page home-page">
+      <div className="landscape-content">
+      <header className="home-hero"><div className="reading-panel"><img src={logo} alt="Enviro-Centric Logo" className="home-logo"/><h1>Environmental Testing and Consulting</h1><Link to="/contact#request-services" className="site-button">Request our services</Link></div></header>
 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Services Section */}
-        <section className="py-12 text-center">
+        <section className="py-12 text-center reading-panel">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">
-            Envrionmental Testing and Consulting
+            Environmental Testing and Consulting
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="home-service-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Link
               to="/services#asbestos"
-              className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-pointer group"
+              className="home-service-card bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-pointer group"
             >
               <div className="flex items-center mb-4">
-                <svg className="w-8 h-8 text-blue-600 dark:text-blue-400 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                </svg>
+                <ServiceIcon type="asbestos" className="w-8 h-8 mr-3 text-blue-600 dark:text-blue-400"/>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300">Asbestos</h3>
               </div>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
@@ -56,12 +39,10 @@ export default function Home() {
             </Link>
             <Link
               to="/services#lead"
-              className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-pointer group"
+              className="home-service-card bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-pointer group"
             >
               <div className="flex items-center mb-4">
-                <svg className="w-8 h-8 text-green-600 dark:text-green-400 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                </svg>
+                <ServiceIcon type="lead" className="w-8 h-8 mr-3 text-green-600 dark:text-green-400"/>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-green-600 dark:group-hover:text-green-400 transition-colors duration-300">Lead</h3>
               </div>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
@@ -76,12 +57,10 @@ export default function Home() {
             </Link>
             <Link
               to="/services#microbial"
-              className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-pointer group"
+              className="home-service-card bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-pointer group"
             >
               <div className="flex items-center mb-4">
-                <svg className="w-8 h-8 text-purple-600 dark:text-purple-400 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
+                <ServiceIcon type="microbial" className="w-8 h-8 mr-3 text-purple-600 dark:text-purple-400"/>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors duration-300">Microbial</h3>
               </div>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
@@ -95,13 +74,11 @@ export default function Home() {
               </div>
             </Link>
             <Link
-              to="/services#hazardous-materials"
-              className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-pointer group"
+              to="/services#hazardous-waste"
+              className="home-service-card bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-pointer group"
             >
               <div className="flex items-center mb-4">
-                <svg className="w-8 h-8 text-orange-600 dark:text-orange-400 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                </svg>
+                <ServiceIcon type="hazardous-waste" className="w-8 h-8 mr-3 text-orange-600 dark:text-orange-400"/>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors duration-300">Hazardous Materials</h3>
               </div>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
@@ -116,35 +93,8 @@ export default function Home() {
             </Link>
           </div>
         </section>
-          {/* Introduction Section */}
-          <section className="py-12 text-center">
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
-              live.laugh.love.
-            </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-4 text-left">
-             Our team of trained and certified consultants, technicians, and assessors have been serving the asbestos and hazardous materials remediation industry since 1993, and have the hands-on expertise to support projects from initial assessment through completion.
-            </p>
-
-            <p className="text-lg text-gray-600 dark:text-gray-300 mb-4 text-left">
-              We provide comprehensive consulting and assessment services to a diverse range of clients, including:
-            </p>
-
-
-            <ul className="list-disc pl-5 text-left text-gray-600 dark:text-gray-300 space-y-2">
-
-              <li>Homeowners, Realtors, and Property Management Companies</li>
-              <li>Property and Building Owners</li>
-              <li>General Contractors</li>
-              <li>Developers</li>
-              <li>Hospitals and Healthcare Facilities</li>
-              <li>Local, State, and Federal Government Agencies, including Military Bases</li>
-            </ul>
-            <br></br> <br></br>
-
-          </section>
-
         {/* Company Info Section */}
-        <section className="py-12 text-center bg-gray-50 dark:bg-gray-800 rounded-lg mb-6">
+        <section className="company-panel py-12 text-center rounded-lg mb-6">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
               About Our Company
@@ -185,6 +135,8 @@ export default function Home() {
           </div>
         </section>
 
+      </div>
+      <ContactBanner/>
       </div>
     </div>
   );

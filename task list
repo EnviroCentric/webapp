@@ -24,8 +24,9 @@ Servies:
         - Lead: Periodic table
         - Microbial: Petri dish or microscope
         - HAzardous Materials: Skull with bones
-    - Change navigation bar on the left
+    - Remove navigation bar on the left side of the page
     - On services dropdown, add dropdown for each service (section for each box on services page)
+    - One column of tiles rather than 2 columns
 
 
 
