@@ -5,7 +5,8 @@ import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Home from './pages/Home';
 import ServiceInfo from './pages/ServiceInfo';
-import Info from './pages/Info';
+import Contact from './pages/Contact';
+import Resources from './pages/Resources';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ProfileEdit from './pages/ProfileEdit';
@@ -43,7 +44,9 @@ function App() {
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/services" element={<ServiceInfo />} />
-                  <Route path="/info" element={<Info />} />
+                  <Route path="/contact" element={<Contact />} />
+                  <Route path="/resources" element={<Resources />} />
+
                   <Route
                     path="/dashboard"
                     element={

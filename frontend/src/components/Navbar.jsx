@@ -7,7 +7,8 @@ import Login from '../pages/Login';
 const navigation = [
   { name: "Home", href: "/" },
   { name: "Services", href: "/services" },
-  { name: "Info", href: "/info" },
+  { name: "Contact", href: "/contact" },
+  { name: "Resources", href: "/resources" },
   { name: "Dashboard", href: "/dashboard", requiresTechnician: true },
   { name: "Projects", href: "/projects", requiresSupervisor: true },
   { name: "Companies", href: "/companies", requiresSupervisor: true },

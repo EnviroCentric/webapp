@@ -62,7 +62,7 @@ export default function ServiceInfo() {
     {
       id: 'asbestos',
       title: 'Asbestos Services',
-      subtitle: 'Comprehensive Asbestos Management Solutions',
+      subtitle: 'Asbestos Management Solutions',
       description: 'Professional asbestos inspection, survey, and monitoring services to ensure workplace safety and regulatory compliance.',
       icon: (
         <svg className="w-16 h-16 text-blue-600 dark:text-blue-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -85,18 +85,21 @@ export default function ServiceInfo() {
           ],
         },
         {
-          name: 'Project Monitoring',
+          name: 'Asbestos Project Monitoring',
           description:
             'On-site oversight during asbestos abatement projects to help ensure proper procedures and regulatory compliance.',
           details: [
             'Pre-abatement setup inspection',
             'Daily monitoring during abatement',
+            'Jobsite safety',
+            'Workplace exposure monitoring',
+            'Respirator fit testing',
             'Air sampling and analysis',
             'Final clearance inspection and certification',
           ],
         },
         {
-          name: 'Clearance Testing',
+          name: 'Asbestos Clearance Testing',
           description:
             'Post-abatement clearance inspections following asbestos removal work.',
           details: [
@@ -130,7 +133,7 @@ export default function ServiceInfo() {
           ]
         },
         {
-          name: 'Risk Assessments',
+          name: 'Lead Risk Assessments',
           description: 'Evaluation of lead-based paint hazards and determination of risk reduction strategies.',
           details: [
             'Lead-based paint condition assessment',
@@ -140,7 +143,7 @@ export default function ServiceInfo() {
           ]
         },
         {
-          name: 'Clearance Testing',
+          name: 'Lead Clearance Testing',
           description: 'Post-renovation clearance testing.',
           details: [
             'Visual assessment',
@@ -150,13 +153,16 @@ export default function ServiceInfo() {
           ]
         },
         {
-          name: 'Project Monitoring',
+          name: 'Lead Project Monitoring',
           description: 'Oversight of lead abatement and renovation projects to ensure compliance with regulations.',
           details: [
-            'Pre-work setup inspection',
-            'Daily monitoring during work',
-            'Work practice evaluation',
-            'Final clearance inspection and certification'
+            'Pre-abatement setup inspection',
+            'Daily monitoring during abatement',
+            'Jobsite safety',
+            'Workplace exposure monitoring',
+            'Respirator fit testing',
+            'Air sampling and analysis',
+            'Final clearance inspection and certification',
           ]
         }
       ]
@@ -217,7 +223,7 @@ export default function ServiceInfo() {
     {
       id: 'hazardous-waste',
       title: 'Hazardous Waste Services',
-      subtitle: 'Hazardous Materials Management & Compliance',
+      subtitle: 'Hazardous Waste Management & Compliance',
       description: 'Professional hazardous waste assessment, testing, and disposal consultation services.',
       icon: (
         <svg className="w-16 h-16 text-orange-600 dark:text-orange-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -229,9 +235,7 @@ export default function ServiceInfo() {
           name: 'Hazardous Waste Assessments',
           description: 'Comprehensive evaluation and characterization of potentially hazardous materials.',
           details: [
-            'Material identification and classification',
             'Hazardous waste determination',
-            'Generator status evaluation',
             'Regulatory compliance assessment'
           ]
         },
@@ -241,7 +245,6 @@ export default function ServiceInfo() {
           details: [
             'TCLP testing for heavy metals',
             'Ignitability and reactivity testing',
-            'Paint filter test',
             'Chemical composition analysis'
           ]
         },
@@ -252,7 +255,6 @@ export default function ServiceInfo() {
             'Disposal option recommendations',
             'Waste manifesting assistance',
             'Transportation requirements',
-            'Cost-effective disposal solutions'
           ]
         },
         {
@@ -287,7 +289,7 @@ export default function ServiceInfo() {
               Our Services
             </h1>
             <p className="text-xl md:text-2xl text-blue-100 max-w-3xl mx-auto">
-              Comprehensive environmental consulting services for asbestos, lead, and microbial assessments
+              Environmental consulting services for asbestos, lead, and microbial assessments
             </p>
             </div>
           </div>
@@ -465,7 +467,7 @@ export default function ServiceInfo() {
                 <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                 </svg>
-                Email Us
+                Request our Services
               </a>
             </div>
           </div>

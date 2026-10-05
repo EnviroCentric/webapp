@@ -26,11 +26,12 @@ export default function Home() {
         />
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
         {/* Services Section */}
         <section className="py-12 text-center">
           <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">
-            Our Services
+            Envrionmental Testing and Consulting
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             <Link
@@ -94,14 +95,14 @@ export default function Home() {
               </div>
             </Link>
             <Link
-              to="/services#hazardous-waste"
+              to="/services#hazardous-materials"
               className="bg-white dark:bg-gray-800 p-8 rounded-lg shadow-lg border border-gray-100 dark:border-gray-700 hover:-translate-y-2 hover:shadow-xl transition-all duration-300 cursor-pointer group"
             >
               <div className="flex items-center mb-4">
                 <svg className="w-8 h-8 text-orange-600 dark:text-orange-400 mr-3 group-hover:scale-110 transition-transform duration-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors duration-300">Hazardous Waste</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white group-hover:text-orange-600 dark:group-hover:text-orange-400 transition-colors duration-300">Hazardous Materials</h3>
               </div>
               <p className="text-gray-600 dark:text-gray-300 mb-4">
                 Assessments, Testing, Analysis & Disposal Consultation
@@ -115,6 +116,32 @@ export default function Home() {
             </Link>
           </div>
         </section>
+          {/* Introduction Section */}
+          <section className="py-12 text-center">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
+              live.laugh.love.
+            </h2>
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-4 text-left">
+             Our team of trained and certified consultants, technicians, and assessors have been serving the asbestos and hazardous materials remediation industry since 1993, and have the hands-on expertise to support projects from initial assessment through completion.
+            </p>
+
+            <p className="text-lg text-gray-600 dark:text-gray-300 mb-4 text-left">
+              We provide comprehensive consulting and assessment services to a diverse range of clients, including:
+            </p>
+
+
+            <ul className="list-disc pl-5 text-left text-gray-600 dark:text-gray-300 space-y-2">
+
+              <li>Homeowners, Realtors, and Property Management Companies</li>
+              <li>Property and Building Owners</li>
+              <li>General Contractors</li>
+              <li>Developers</li>
+              <li>Hospitals and Healthcare Facilities</li>
+              <li>Local, State, and Federal Government Agencies, including Military Bases</li>
+            </ul>
+            <br></br> <br></br>
+
+          </section>
 
         {/* Company Info Section */}
         <section className="py-12 text-center bg-gray-50 dark:bg-gray-800 rounded-lg mb-6">
@@ -138,11 +165,11 @@ export default function Home() {
                   <li>CDPH Project Monitors</li>
                 </ul>
               </div>
-              {/* Credentials Section */}
+              {/* Credentials Section
 
                 <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">
                   Credentials
-                </h3>
+                </h3> */}
                 <div className="flex flex-col space-y-6">
                   <div>
                     <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">NAICS Codes</h4>
@@ -161,4 +188,4 @@ export default function Home() {
       </div>
     </div>
   );
-} 
+}
