@@ -85,9 +85,9 @@ html {
 .landscape-background img.is-active { opacity:1; }
 .landscape-shade { position:absolute; inset:0; background:linear-gradient(180deg, #061c2840, #05191d80); }
 .landscape-content { position:relative; }
-.reading-panel { background:rgba(15,23,32,.86); border:1px solid #ffffff25; border-radius:12px; padding:clamp(24px,4vw,48px); backdrop-filter:blur(8px); }
-.home-hero { min-height:75vh; display:grid; place-items:center; padding:60px 24px 100px; text-align:center; }
-.home-hero .reading-panel { max-width:850px; }
+.reading-panel { background:var(--site-surface); border:1px solid #ffffff25; border-radius:12px; padding:clamp(24px,4vw,48px); backdrop-filter:blur(8px); }
+.home-hero { min-height:75vh; display:grid; place-items:center; padding-block:60px 100px; text-align:center; }
+.home-hero .reading-panel { width:100%; }
 .home-logo { width:min(100%,580px); margin:0 auto 24px; }
 .home-hero h1,.services-intro h1,.contact-page h1 { font-size:clamp(32px,4vw,52px); font-weight:700; line-height:1.15; margin-bottom:20px; }
 .home-hero p { font-size:20px; margin-bottom:28px; }
@@ -172,13 +172,13 @@ html {
 
 /* Translucent surfaces let the landscape remain visible behind the content. */
 .site-navbar {
-  background:rgba(229,231,235,.78);
+  background:var(--site-surface);
   backdrop-filter:blur(12px);
   border-bottom:1px solid rgba(255,255,255,.2);
 }
-.dark .site-navbar { background:rgba(31,41,55,.76); }
-.company-panel { background:rgba(243,244,246,.78); backdrop-filter:blur(8px); }
-.dark .company-panel { background:rgba(31,41,55,.72); }
+.dark .site-navbar { background:var(--site-surface); }
+.company-panel { background:var(--site-surface); backdrop-filter:blur(8px); }
+.dark .company-panel { background:var(--site-surface); }
 .service-color-asbestos svg { color:#2563eb; }
 .service-color-lead svg { color:#16a34a; }
 .service-color-microbial svg { color:#9333ea; }
@@ -200,17 +200,65 @@ html {
 .site-slideshow-shell > main { padding-bottom:80px; }
 .site-slideshow-shell .contact-page,
 .site-slideshow-shell .public-projects {
-  background:rgba(243,244,246,.82);
+  background:var(--site-surface);
   backdrop-filter:blur(8px);
 }
 .dark .site-slideshow-shell .contact-page,
-.dark .site-slideshow-shell .public-projects { background:rgba(17,24,39,.82); }
+.dark .site-slideshow-shell .public-projects { background:var(--site-surface); }
 .contact-banner {
-  background:rgba(229,231,235,.78);
+  background:var(--site-surface);
   color:#111827;
   backdrop-filter:blur(12px);
   border-top:1px solid rgba(255,255,255,.2);
 }
-.dark .contact-banner { background:rgba(31,41,55,.76); color:#f3f4f6; }
-.call-button { background:transparent; color:inherit; border:1px solid currentColor; }
-.call-button:hover { background:rgba(37,99,235,.15); }
+.dark .contact-banner { background:var(--site-surface); color:#f3f4f6; }
+
+/* Shared surface treatment and section rhythm across the public site. */
+:root {
+  --site-surface: rgba(243, 244, 246, .78);
+  --site-section-gap: 24px;
+}
+html.dark { --site-surface: rgba(31, 41, 55, .78); }
+.home-sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--site-section-gap);
+}
+.home-hero { padding-bottom: var(--site-section-gap); }
+.landscape-page { color: #111827; }
+.dark .landscape-page { color: #f3f4f6; }
+.landscape-page .reading-panel > :is(h2, h3, p) { color: inherit !important; }
+.site-navbar, .reading-panel, .company-panel, .contact-banner {
+  backdrop-filter: blur(8px);
+}
+.home-service-card,
+.services-mega-menu,
+.dark .services-mega-menu,
+.request-form,
+.dark .request-form,
+.request-form select option {
+  background: var(--site-surface);
+}
+html:not(.dark) .home-service-card.bg-white { background: var(--site-surface) !important; }
+.services-intro { margin-bottom: var(--site-section-gap); }
+.service-section { margin-bottom: var(--site-section-gap); }
+.service-heading { margin-bottom: var(--site-section-gap); }
+.service-tiles { gap: var(--site-section-gap); }
+
+.site-slideshow-shell .public-projects,
+.dark .site-slideshow-shell .public-projects { background: transparent; backdrop-filter: none; display: grid; gap: var(--site-section-gap); }
+.public-projects {
+  padding-block: var(--site-section-gap);
+  border-radius: 12px;
+}
+.public-projects > .reading-panel {
+  border-radius: 12px;
+  padding: clamp(24px, 4vw, 48px);
+}
+.resources-page .bg-gray-900\/50,
+.resources-page .bg-gray-50,
+.resources-page .bg-white,
+.dark .resources-page .bg-gray-800 { background: var(--site-surface) !important; backdrop-filter: blur(8px); }
+
+/* Public-page call to action spans the viewport outside content containers. */
+main > .contact-banner { width: 100%; margin-top: var(--site-section-gap); border-radius: 12px; }

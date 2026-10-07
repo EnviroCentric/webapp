@@ -1,7 +1,6 @@
 import React from 'react';
-import ContactBanner from '../components/ContactBanner';
 export default function PublicProjects() { return <div className="public-projects max-w-5xl mx-auto px-6 py-12">          {/* Introduction Section */}
-          <section className="py-12 text-center">
+          <section className="reading-panel text-center">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
               Who We Work With
             </h2>
@@ -23,8 +22,8 @@ export default function PublicProjects() { return <div className="public-project
               <li>Hospitals and Healthcare Facilities</li>
               <li>Local, State, and Federal Government Agencies, including Military Bases</li>
             </ul>
-            <br></br> <br></br>
+
 
           </section>
 
-<ContactBanner/></div>; }
+</div>; }

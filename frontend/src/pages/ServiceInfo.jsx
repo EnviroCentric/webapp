@@ -3,7 +3,6 @@ import { useLocation } from 'react-router-dom';
 import { services, serviceAnchor, serviceLabel } from '../data/services';
 import ServiceIcon from '../components/ServiceIcon';
 import LandscapeBackground from '../components/LandscapeBackground';
-import ContactBanner from '../components/ContactBanner';
 export default function ServiceInfo() {
   const location = useLocation();
   const [active, setActive] = useState(0);
@@ -27,5 +26,5 @@ export default function ServiceInfo() {
     <div className="service-column">{services.map(service => <section key={service.id} id={service.id} className="service-section">
       <header className={`reading-panel service-heading service-color-${service.id}`}><ServiceIcon type={service.id}/><h2>{service.title}</h2><h3>{service.subtitle}</h3><p>{service.description}</p></header>
       <div className="service-tiles">{service.services.map(sub => <article key={sub.name} id={serviceAnchor(sub.name)} className="reading-panel service-tile"><h3>{serviceLabel(sub.name)}</h3><p>{sub.description}</p><ul>{sub.details.map(detail => <li key={detail}>{detail}</li>)}</ul></article>)}</div>
-    </section>)}</div><ContactBanner/></div></div>;
+    </section>)}</div></div></div>;
 }

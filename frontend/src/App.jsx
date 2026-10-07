@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
+import ContactBanner from './components/ContactBanner';
 import LandscapeBackground from './components/LandscapeBackground';
 import Home from './pages/Home';
 import PublicProjects from './pages/PublicProjects';
@@ -37,6 +38,7 @@ import { PermissionsProvider } from './context/PermissionsContext';
 function App() {
   const { pathname } = useLocation();
   const hasSlideshow = pathname !== '/services';
+  const isPublicPage = ['/', '/our-projects', '/services', '/contact', '/resources'].includes(pathname);
   return (
     <AuthProvider>
       <RolesProvider>
@@ -202,6 +204,7 @@ function App() {
                     }
                   />
                 </Routes>
+                {isPublicPage && <ContactBanner />}
               </main>
             </div>
           </ThemeProvider>

@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/logo.png';
 import ServiceIcon from '../components/ServiceIcon';
-import ContactBanner from '../components/ContactBanner';
 
 export default function Home() {
 
@@ -10,8 +9,8 @@ export default function Home() {
   return (
     <div className="landscape-page home-page">
       <div className="landscape-content">
-      <header className="home-hero"><div className="reading-panel"><img src={logo} alt="Enviro-Centric Logo" className="home-logo"/><h1>Environmental Testing and Consulting</h1><Link to="/contact#request-services" className="site-button">Request our services</Link></div></header>
-<div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="home-hero max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="reading-panel"><img src={logo} alt="Enviro-Centric Logo" className="home-logo"/><h1>Environmental Testing and Consulting</h1><Link to="/contact#request-services" className="site-button">Request our services</Link></div></header>
+<div className="home-sections max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Services Section */}
         <section className="py-12 text-center reading-panel">
@@ -94,7 +93,7 @@ export default function Home() {
           </div>
         </section>
         {/* Company Info Section */}
-        <section className="company-panel py-12 text-center rounded-lg mb-6">
+        <section className="company-panel reading-panel text-center">
           <div className="max-w-4xl mx-auto">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-6">
               About Our Company
@@ -135,8 +134,8 @@ export default function Home() {
           </div>
         </section>
 
+
       </div>
-      <ContactBanner/>
       </div>
     </div>
   );
