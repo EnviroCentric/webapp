@@ -6,11 +6,6 @@ export default function Info() {
       {/* Hero Section */}
       <div
         className="relative text-white"
-        style={{
-          backgroundImage: "url('/sequoia.jpg')",
-          backgroundSize: 'cover',
-          backgroundPosition: 'center',
-        }}
       >
         <div className="bg-gray-900/50">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
@@ -41,8 +36,6 @@ export default function Info() {
                 <p>Phone: (714) 335-5973</p>
                 <p>Phone: (619) 779-1698</p>
                 <p>Email: info@enviro-centric.com</p>
-                <p>P.O. Box 122202</p>
-                <p>Chula Vista, CA 91912</p>
               </div>
             </div>
           </div>

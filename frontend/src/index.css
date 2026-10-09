@@ -262,3 +262,28 @@ html:not(.dark) .home-service-card.bg-white { background: var(--site-surface) !i
 
 /* Public-page call to action spans the viewport outside content containers. */
 main > .contact-banner { width: 100%; margin-top: var(--site-section-gap); border-radius: 12px; }
+
+/* Persistent preview control for content surfaces on every route. */
+.text-box-toggle {
+  position: fixed; bottom: 16px; right: 16px; z-index: 60;
+  padding: 10px 16px; border: 1px solid #ffffff80; border-radius: 8px;
+  background: #111827; color: white; cursor: pointer;
+}
+.text-box-toggle:focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+.text-boxes-hidden { --site-surface: transparent; }
+/* Navigation and footer surfaces stay visible during the content preview. */
+.text-boxes-hidden :is(.site-navbar, .contact-banner) {
+  --site-surface: rgba(243, 244, 246, .78);
+}
+html.dark .text-boxes-hidden :is(.site-navbar, .contact-banner) {
+  --site-surface: rgba(31, 41, 55, .78);
+}
+.text-boxes-hidden :is(.reading-panel, .company-panel, .contact-page, .public-projects, .home-service-card, .request-form),
+.text-boxes-hidden main :is(.bg-white, .bg-gray-50, .bg-gray-800, .bg-gray-900, .bg-gray-900\/50) {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
+/* Keep form choices legible when their dropdown is open. */
+.request-form select option { background: #f3f4f6; color: #111827; }

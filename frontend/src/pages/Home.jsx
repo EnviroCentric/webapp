@@ -112,6 +112,7 @@ export default function Home() {
                   <li>CDPH Lead Inspectors</li>
                   <li>CDPH Risk Assessors</li>
                   <li>CDPH Project Monitors</li>
+                  <li>Mold Inspectors and Supervisors</li>
                 </ul>
               </div>
               {/* Credentials Section

@@ -70,6 +70,7 @@ export const services = [
           details: [
             'Lead-based paint condition assessment',
             'Lead dust and soil sampling',
+            'Drinking water testing',
             'Hazard identification and prioritization',
             'Risk reduction recommendations'
           ]

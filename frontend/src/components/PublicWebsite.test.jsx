@@ -30,11 +30,10 @@ describe('public website interactions', () => {
     fireEvent.keyDown(toggle, { key: 'Escape' });
     expect(toggle).toHaveAttribute('aria-expanded', 'false');
   });
-  it('does not automatically rotate when reduced motion is preferred', () => {
-    vi.stubGlobal('matchMedia', () => ({ matches: true }));
-    vi.useFakeTimers();
-    render(<LandscapeBackground timed/>);
-    vi.advanceTimersByTime(12000);
-    expect(screen.getByRole('button', { name: 'Show landscape 1' })).toHaveAttribute('aria-pressed', 'true');
+  it('uses the Big Sur image without slideshow controls', () => {
+    const { container } = render(<LandscapeBackground/>);
+    expect(container.querySelectorAll('img')).toHaveLength(1);
+    expect(container.querySelector('img')).toHaveAttribute('src', '/big-sur.jpg');
+    expect(screen.queryByRole('button')).not.toBeInTheDocument();
   });
 });

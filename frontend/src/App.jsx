@@ -1,5 +1,6 @@
+import { useState } from 'react';
 import './index.css';
-import { Routes, Route, useLocation } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
@@ -9,7 +10,6 @@ import Home from './pages/Home';
 import PublicProjects from './pages/PublicProjects';
 import ServiceInfo from './pages/ServiceInfo';
 import Contact from './pages/Contact';
-import Resources from './pages/Resources';
 import Dashboard from './pages/Dashboard';
 import Profile from './pages/Profile';
 import ProfileEdit from './pages/ProfileEdit';
@@ -37,15 +37,25 @@ import { PermissionsProvider } from './context/PermissionsContext';
 
 function App() {
   const { pathname } = useLocation();
-  const hasSlideshow = pathname !== '/services';
-  const isPublicPage = ['/', '/our-projects', '/services', '/contact', '/resources'].includes(pathname);
+  const [showTextBoxes, setShowTextBoxes] = useState(() => {
+    try { return localStorage.getItem('showTextBoxes') !== 'false'; }
+    catch { return true; }
+  });
+  function toggleTextBoxes() {
+    const next = !showTextBoxes;
+    setShowTextBoxes(next);
+    try { localStorage.setItem('showTextBoxes', String(next)); }
+    catch { /* Preview still works if storage is unavailable. */ }
+  }
+  const isPublicPage = ['/', '/our-projects', '/services', '/contact'].includes(pathname);
   return (
     <AuthProvider>
       <RolesProvider>
         <PermissionsProvider>
           <ThemeProvider>
-            <div className={`min-h-screen ${hasSlideshow ? 'site-slideshow-shell' : 'bg-gray-300 dark:bg-gray-900'}`}>
-              {hasSlideshow && <LandscapeBackground timed />}
+            <div className={`min-h-screen site-slideshow-shell ${showTextBoxes ? '' : 'text-boxes-hidden'}`}>
+              <LandscapeBackground />
+              <button type="button" className="text-box-toggle" role="switch" aria-checked={showTextBoxes} onClick={toggleTextBoxes}>Text boxes: {showTextBoxes ? 'On' : 'Off'}</button>
               <Navbar />
               <main className="pt-16 pb-6 min-h-[calc(100vh-4rem)]">
                 <Routes>
@@ -53,7 +63,8 @@ function App() {
                   <Route path="/our-projects" element={<PublicProjects />} />
                   <Route path="/services" element={<ServiceInfo />} />
                   <Route path="/contact" element={<Contact />} />
-                  <Route path="/resources" element={<Resources />} />
+                  {/* Keep existing bookmarks working while Resources is hidden. */}
+                  <Route path="/resources" element={<Navigate to="/" replace />} />
 
                   <Route
                     path="/dashboard"
