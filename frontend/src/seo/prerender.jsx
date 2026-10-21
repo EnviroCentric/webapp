@@ -16,7 +16,7 @@ const pages = { '/': Home, '/services': ServiceInfo, '/our-projects': PublicProj
 export function renderPublicPage(path) {
   const Page = isServicePath(path) ? ServiceInfo : pages[path];
   return renderToString(<StaticRouter location={path}>
-    <div className="min-h-screen site-slideshow-shell text-box-mode-1">
+    <div className="min-h-screen site-slideshow-shell text-box-mode-2">
       <LandscapeBackground />
       <nav className="fixed top-0 left-0 right-0 z-50 site-navbar shadow-md" aria-label="Main navigation">
         <div className="max-w-7xl mx-auto px-4 flex items-center gap-4 h-16">

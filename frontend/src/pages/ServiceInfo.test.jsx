@@ -24,6 +24,8 @@ afterEach(() => {
 it('opens a service directly with its own content, photo and canonical URL', () => {
   const { container } = show('/services/microbial');
   expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Microbial Services');
+  expect(screen.getByRole('link', { name: 'Our Services', exact: true })).toBeInTheDocument();
+  expect(screen.queryByText('CALIFORNIA · ENVIROCENTRIC')).not.toBeInTheDocument();
   expect(screen.getByRole('heading', { name: 'Mold Inspections' })).toBeInTheDocument();
   expect(screen.queryByText('XRF testing of painted surfaces')).not.toBeInTheDocument();
   expect(container.querySelector('.landscape-background img')).toHaveAttribute('src', '/images/landscapes/forest.jpg');

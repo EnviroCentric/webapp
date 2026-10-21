@@ -1,19 +1,13 @@
 import PropTypes from 'prop-types';
 
-const options = [
-  { value: 1, label: 'No text boxes' },
-  { value: 2, label: 'Crystal glass text boxes' },
-  { value: 3, label: 'Dark text boxes' },
-];
-
 export default function ReadabilityControl({ value, onChange }) {
-  return <div className="readability-control">
+  const dark = value === 3;
+  return <button type="button" className="readability-control" role="switch"
+    aria-label="Dark text boxes" aria-checked={dark}
+    title={dark ? 'Switch to clear glass text boxes' : 'Switch to dark text boxes'}
+    onClick={() => onChange(dark ? 2 : 3)}>
     <span className="readability-label" aria-hidden="true">Readability</span>
-    <div className="readability-options" role="group" aria-label="Readability mode">
-      {options.map(option => <button type="button" key={option.value}
-        aria-label={`${option.value}: ${option.label}`} title={option.label}
-        aria-pressed={value === option.value} onClick={() => onChange(option.value)}>{option.value}</button>)}
-    </div>
-  </div>;
+    <span className="readability-switch-track" aria-hidden="true"><span className="readability-switch-thumb" /></span>
+  </button>;
 }
-ReadabilityControl.propTypes = { value: PropTypes.oneOf([1, 2, 3]).isRequired, onChange: PropTypes.func.isRequired };
+ReadabilityControl.propTypes = { value: PropTypes.oneOf([2, 3]).isRequired, onChange: PropTypes.func.isRequired };

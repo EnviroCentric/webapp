@@ -23,21 +23,22 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-it('offers three named styles and preserves the selection across navigation and reloads', () => {
+it('defaults to clear glass and remembers the dark toggle across navigation and reloads', () => {
   const initial = show();
-  expect(screen.getByRole('button', { name: '1: No text boxes' })).toHaveAttribute('aria-pressed', 'true');
-  fireEvent.click(screen.getByRole('button', { name: '2: Crystal glass text boxes' }));
   expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-2');
-  expect(localStorage.getItem('readabilityMode')).toBe('2');
+  expect(screen.getByRole('switch', { name: 'Dark text boxes' })).toHaveAttribute('aria-checked', 'false');
+  fireEvent.click(screen.getByRole('switch', { name: 'Dark text boxes' }));
+  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-3');
+  expect(localStorage.getItem('readabilityMode')).toBe('3');
   fireEvent.click(screen.getByRole('link', { name: 'Services' }));
   expect(screen.getByText('Service content')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '2: Crystal glass text boxes' })).toHaveAttribute('aria-pressed', 'true');
+  expect(screen.getByRole('switch', { name: 'Dark text boxes' })).toHaveAttribute('aria-checked', 'true');
   initial.unmount();
   show();
-  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-2');
-  fireEvent.click(screen.getByRole('button', { name: '3: Dark text boxes' }));
   expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-3');
-  expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(1);
+  fireEvent.click(screen.getByRole('switch', { name: 'Dark text boxes' }));
+  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-2');
+  expect(screen.queryByRole('button', { name: /No text boxes/ })).not.toBeInTheDocument();
 });
 
 it('maps the previous enabled toggle to dark boxes and prefers a saved numbered mode', () => {
@@ -54,6 +55,13 @@ it('keeps the style control usable when storage is blocked', () => {
   localStorage.getItem.mockImplementation(() => { throw new Error('blocked'); });
   localStorage.setItem.mockImplementation(() => { throw new Error('blocked'); });
   show();
-  fireEvent.click(screen.getByRole('button', { name: '2: Crystal glass text boxes' }));
+  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-2');
+  fireEvent.click(screen.getByRole('switch', { name: 'Dark text boxes' }));
+  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-3');
+});
+
+it('migrates the removed no-box preference to clear glass', () => {
+  localStorage.setItem('readabilityMode', '1');
+  show();
   expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-2');
 });

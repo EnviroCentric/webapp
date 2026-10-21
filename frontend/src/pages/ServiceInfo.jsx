@@ -2,6 +2,7 @@ import React, { useEffect, useRef } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { serviceAnchor, serviceLabel } from '../data/services';
 import { serviceSlides, slideForPath, slideForAnchor, isServicePath } from '../data/serviceSlides';
+import { useSlowServiceScroll } from '../hooks/useSlowServiceScroll';
 export default function ServiceInfo() {
   const { pathname, hash, state } = useLocation();
   const navigate = useNavigate();
@@ -20,6 +21,8 @@ export default function ServiceInfo() {
     if (info.current && !hash) info.current.scrollTop = state?.serviceScroll === 'end' ? info.current.scrollHeight : 0;
     wheel.current.distance = 0;
   }, [pathname, hash, state]);
+
+  useSlowServiceScroll(info, stage, pathname);
 
   useEffect(() => {
     const element = stage.current;
@@ -79,7 +82,7 @@ export default function ServiceInfo() {
       }}
       onPointerDown={event => { if (event.pointerType === 'touch' && !event.target.closest('a, button, input, .carousel-service-details')) touch.current = { x: event.clientX, y: event.clientY }; }}
       onPointerUp={swipeEnd} onPointerCancel={() => { touch.current = null; }}>
-      <header className="carousel-topline"><Link to="/services">Our services</Link><span>CALIFORNIA · ENVIROCENTRIC</span></header>
+      <header className="carousel-topline"><Link to="/services">Our Services</Link></header>
       <div className="carousel-navigation"><nav className="carousel-services" aria-label="Choose a service">{serviceSlides.map(slide => <Link key={slide.id} to={slide.path} aria-current={slide.id === service.id ? 'page' : undefined}>{slide.label}</Link>)}</nav><p className="carousel-progress" aria-live="polite" aria-atomic="true"><span className="carousel-current-number">{String(index + 1).padStart(2, '0')}</span><span className="carousel-count-divider" /><span>{String(serviceSlides.length).padStart(2, '0')}</span><span className="sr-only">: {service.label}</span></p></div>
       <div className="carousel-layout">
       <div className="carousel-story" key={service.id} role="group" aria-roledescription="slide" aria-label={`${index + 1} of ${serviceSlides.length}: ${service.label}`}>

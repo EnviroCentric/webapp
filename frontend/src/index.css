@@ -341,7 +341,6 @@ main > .contact-banner { width: 100%; margin-top: var(--site-section-gap); borde
 }
 @media(max-width:767px) {
   .service-carousel { width:calc(100% - 40px); padding-block:20px; }
-  .carousel-topline > span { font-size:9px; letter-spacing:.07em; }
   .carousel-navigation { margin-top:18px; gap:10px; }
   .carousel-services { gap:6px; }
   .carousel-progress { gap:6px; padding-top:12px; }
@@ -363,17 +362,15 @@ main > .contact-banner { width: 100%; margin-top: var(--site-section-gap); borde
 .site-navbar .services-menu { color:var(--navbar-ink) !important; }
 .site-navbar :is(.bg-gray-900,.dark\:bg-gray-900) { background:#111827; color:white; }
 .site-navbar :is(.services-mega-menu,.bg-white,.dark\:bg-gray-800) { background:var(--navbar-surface); color:var(--navbar-ink); }
-.readability-control { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+.readability-control { display:flex; align-items:center; gap:8px; flex-shrink:0; cursor:pointer; padding:5px 0; }
 .readability-label { color:var(--navbar-ink); font-size:11px; font-weight:500; }
-.readability-options { display:flex; gap:2px; padding:3px; border:1px solid #ffffff35; border-radius:8px; background:#111827; }
-.readability-options button { display:grid; place-items:center; width:30px; height:30px; border-radius:5px; color:var(--navbar-ink); font-size:12px; font-weight:600; cursor:pointer; transition:background .15s,color .15s; }
-.readability-options button:hover { background:#ffffff20; }
-.readability-options button[aria-pressed="true"] { background:#e7f0e8; color:#122b24; }
-.readability-options button:focus-visible { outline:2px solid #a5dbea; outline-offset:2px; }
-@media(max-width:639px) { .readability-label { display:none; } .readability-options button { width:27px; height:30px; } }
+.readability-switch-track { display:block; width:38px; height:24px; padding:3px; background:#64748b; border:1px solid #ffffff35; border-radius:999px; transition:background .2s; }
+.readability-switch-thumb { display:block; width:16px; height:16px; background:#f3f4f6; border-radius:50%; transition:transform .2s; }
+.readability-control[aria-checked="true"] .readability-switch-track { background:#2563eb; }
+.readability-control[aria-checked="true"] .readability-switch-thumb { transform:translateX(12px); }
+.readability-control:focus-visible { outline:2px solid #a5dbea; outline-offset:4px; border-radius:5px; }
 
 /* Surface variables live in main so navbar/dropdown styling never inherits them. */
-.text-box-mode-1 > main { --content-surface:transparent; --content-blur:none; --content-edge:transparent; --content-shadow:none; }
 .text-box-mode-2 > main { --content-surface:rgba(8,28,26,.125); --content-blur:blur(6px); --content-edge:rgba(255,255,255,.31); --content-shadow:inset 0 1px 0 #ffffff12; }
 .text-box-mode-3 > main { --content-surface:rgba(31,41,55,.78); --content-blur:blur(8px); --content-edge:rgba(255,255,255,.15); --content-shadow:none; }
 .site-slideshow-shell > main :is(.reading-panel,.company-panel,.home-service-card,.request-form,.contact-banner,.carousel-service-details,.carousel-detail-card),
