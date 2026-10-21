@@ -31,4 +31,4 @@ Upload the frontend build before applying the infrastructure change that uses `/
 
 The checked-in GitHub Actions workflow currently targets `main`, while this repository's remote default is `master`; it also uses old deployment variable names and lacks a frontend build. Pushing this release branch does not automatically deploy it. Use the validated frontend deployment command above against the existing resources until the workflow is updated separately.
 
-After deploying, inspect the four public URLs in Search Console and submit `https://enviro-centric.com/sitemap.xml`. Rankings and search-result presentation are controlled by Google.
+After deploying, inspect the four public URLs in Search Console and submit `https://www.enviro-centric.com/sitemap.xml`. Rankings and search-result presentation are controlled by Google.
