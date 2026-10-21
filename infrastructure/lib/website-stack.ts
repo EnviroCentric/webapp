@@ -87,6 +87,14 @@ export class WebsiteStack extends cdk.Stack {
         iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
       ],
     });
+    role.addToPolicy(new iam.PolicyStatement({
+      actions: ['ses:SendEmail'],
+      resources: [
+        `arn:${cdk.Aws.PARTITION}:ses:${this.region}:${this.account}:identity/info@enviro-centric.com`,
+        `arn:${cdk.Aws.PARTITION}:ses:${this.region}:${this.account}:identity/enviro-centric.com`,
+      ],
+      conditions: { StringEquals: { 'ses:FromAddress': 'info@enviro-centric.com' }, 'ForAllValues:StringEquals': { 'ses:Recipients': ['info@enviro-centric.com'] } },
+    }));
     reportsBucket.grantReadWrite(role);
     backupsBucket.grantReadWrite(role);
     repository.grantPull(role);
@@ -153,8 +161,8 @@ export class WebsiteStack extends cdk.Stack {
       },
       defaultRootObject: 'index.html',
       errorResponses: [
-        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: '/index.html', ttl: cdk.Duration.seconds(0) },
-        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: '/index.html', ttl: cdk.Duration.seconds(0) },
+        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: '/app.html', ttl: cdk.Duration.seconds(0) },
+        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: '/app.html', ttl: cdk.Duration.seconds(0) },
       ],
       certificate,
       domainNames,

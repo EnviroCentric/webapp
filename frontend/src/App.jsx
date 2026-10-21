@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useReadabilityMode } from './hooks/useReadabilityMode';
 import './index.css';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
+import PageScrollRestoration from './components/PageScrollRestoration';
+import Seo from './components/Seo';
+import { publicPages } from './data/seo';
 import ContactBanner from './components/ContactBanner';
 import LandscapeBackground from './components/LandscapeBackground';
 import Home from './pages/Home';
@@ -37,31 +40,24 @@ import { PermissionsProvider } from './context/PermissionsContext';
 
 function App() {
   const { pathname } = useLocation();
-  const [showTextBoxes, setShowTextBoxes] = useState(() => {
-    try { return localStorage.getItem('showTextBoxes') !== 'false'; }
-    catch { return true; }
-  });
-  function toggleTextBoxes() {
-    const next = !showTextBoxes;
-    setShowTextBoxes(next);
-    try { localStorage.setItem('showTextBoxes', String(next)); }
-    catch { /* Preview still works if storage is unavailable. */ }
-  }
-  const isPublicPage = ['/', '/our-projects', '/services', '/contact'].includes(pathname);
+  const [readabilityMode, selectReadabilityMode] = useReadabilityMode();
+  const isPublicPage = Boolean(publicPages[pathname.replace(/\/+$/, '') || '/']);
   return (
     <AuthProvider>
       <RolesProvider>
         <PermissionsProvider>
           <ThemeProvider>
-            <div className={`min-h-screen site-slideshow-shell ${showTextBoxes ? '' : 'text-boxes-hidden'}`}>
+            <div className={`min-h-screen site-slideshow-shell text-box-mode-${readabilityMode}`}>
+              <PageScrollRestoration />
+              <Seo />
               <LandscapeBackground />
-              <button type="button" className="text-box-toggle" role="switch" aria-checked={showTextBoxes} onClick={toggleTextBoxes}>Text boxes: {showTextBoxes ? 'On' : 'Off'}</button>
-              <Navbar />
+              <Navbar readabilityMode={readabilityMode} onReadabilityChange={selectReadabilityMode} />
               <main className="pt-16 pb-6 min-h-[calc(100vh-4rem)]">
                 <Routes>
                   <Route path="/" element={<Home />} />
                   <Route path="/our-projects" element={<PublicProjects />} />
                   <Route path="/services" element={<ServiceInfo />} />
+                  <Route path="/services/:serviceId" element={<ServiceInfo />} />
                   <Route path="/contact" element={<Contact />} />
                   {/* Keep existing bookmarks working while Resources is hidden. */}
                   <Route path="/resources" element={<Navigate to="/" replace />} />

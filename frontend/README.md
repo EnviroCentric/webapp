@@ -1,5 +1,31 @@
 # React + Vite
 
+## Public search metadata and deployment
+
+`src/data/seo.js` defines the canonical production origin, metadata for each public route, and organization details. `Seo` updates the document head during client navigation. Public URLs are `/`, `/services`, `/our-projects`, `/contact`, and the four service pages defined in `src/data/serviceSlides.js`; account and unknown routes use `noindex` and have no canonical URL.
+
+`npm run build` also renders each public page into HTML, generates `dist/sitemap.xml` and `dist/robots.txt`, and copies the original company logo to the public site. Keep `public/logo.png` in sync with `src/assets/logo.png`. Public content renders from the same React page components used in the browser.
+
+The build emits directory index files (for example `dist/services/asbestos/index.html`). Deploy using `npm run deploy` with `WEBSITE_BUCKET`, `DISTRIBUTION_ID`, and `AWS_REGION` configured: `deploy.js` maps nested index files to extensionless S3 keys (for example `services/asbestos` and `services`) with `text/html`, assigns XML and TXT their correct content types, then invalidates the CDN cache. This allows `/services` and `/services/asbestos` to coexist on S3. Use this deployment script rather than the legacy batch upload, which does not perform that URL mapping.
+
+Upload the frontend build before deploying the infrastructure change that switches CloudFront's SPA error fallback to `/app.html`. That fallback is a neutral `noindex` shell for account and unknown URLs, instead of the prerendered homepage. An existing distribution requires the equivalent fallback update. Public pages and sitemap entries must use the same canonical origin; change `siteUrl` if the production hostname changes.
+
+After deployment, inspect the public URLs in Search Console and submit `https://enviro-centric.com/sitemap.xml`. Metadata and structured data help describe the business but do not guarantee rankings or a particular search appearance.
+
+## Readability and shared shading
+
+The navbar has three numbered readability buttons: 1 removes content-box surfaces, 2 uses the translucent crystal-glass treatment, and 3 uses the existing dark blue-gray treatment. The selection applies across routes and is saved in `localStorage.readabilityMode`. An older `showTextBoxes=true` preference maps to mode 3, while false or no saved preference maps to mode 1. The control continues to work if storage is blocked.
+
+Content surface variables are scoped to `main`; the navbar and its menus have their own independent palette. `--navbar-rgb` in `src/index.css` uses the screenshot-matched blue-gray #35414F (53, 65, 79) for both the navbar and shared page gradient. The gradient starts below the 64px navbar, so shading does not affect navigation. The services scroll hint is right-aligned. Desktop services use one panel; mobile applies the chosen style to individual cards.
+
+## Services carousel behavior
+
+The services carousel uses real routes: `/services/asbestos`, `/services/lead`, `/services/microbial`, and `/services/hazardous-waste`. Each has its own prerendered content, metadata and sitemap entry. Top service bubbles, left/right keys when the carousel region is focused, and horizontal touch swipes outside the details navigate between these routes. The slide counter appears beside the bubbles; there are no bottom arrow controls. It does not autoplay. Browser Back/Forward work normally; switching slides preserves the carousel's scroll position, while subsection links still scroll to their target. Old `/services#...` bookmarks redirect to the relevant service page.
+
+At desktop widths of 1024px and above, the heading sits to the left of one scrollable information panel. Wheel input over the stage scrolls that panel first. At a panel boundary, 180px of additional wheel movement advances/reverses the service, with a 1000ms cooldown to absorb momentum. Direction changes or gaps longer than 220ms clear partial threshold input. Scrolling beyond the first/last service releases the document scroll, allowing access to the footer. Mobile uses normal document scrolling and transparent, individually outlined detail cards.
+
+`src/data/serviceSlides.js` controls the photo, crop position, label and SEO summary for each category. The original supplied PNGs are preserved in `src/assets/landscapes/`; JPEG web copies are in `public/images/landscapes/`. The fourth slide uses the existing Big Sur image. The photo stage waits for the incoming photo to load before crossfading, and reduced-motion preferences disable the content animation and photo transition.
+
 This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
 
 Currently, two official plugins are available:

@@ -4,17 +4,20 @@ export default function RequestServicesForm() {
   const [sending, setSending] = useState(false);
   async function submit(event) {
     event.preventDefault();
-    const endpoint = import.meta.env.VITE_CONTACT_FORM_URL;
-    if (!endpoint) { setStatus('Online submission is not available yet. Please call (714) 335-5973. Your entries are still here.'); return; }
+    const apiUrl = import.meta.env.VITE_API_URL?.replace(/\/$/, '');
+    const endpoint = import.meta.env.VITE_CONTACT_FORM_URL || (apiUrl ? apiUrl + '/api/v1/contact' : '/api/v1/contact');
     setSending(true); setStatus('');
     try {
       const response = await fetch(endpoint, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(event.currentTarget))) });
       if (!response.ok) throw new Error('Submission failed');
+      const result = await response.json();
+      if (result.status !== 'submitted') throw new Error('Submission not confirmed');
       setStatus('Thank you. Your request has been submitted.');
     } catch { setStatus('We could not submit your request. Please try again or call (714) 335-5973.'); }
     finally { setSending(false); }
   }
   return <form id="request-services" className="request-form" onSubmit={submit}>
+    <label className="contact-honeypot" aria-hidden="true">Website<input name="website" tabIndex={-1} autoComplete="off" /></label>
     <h2>Request our services</h2><p>Tell us about your project. Fields marked * are required.</p>
     <div className="form-name-row"><label>First name *<input name="firstName" autoComplete="given-name" required maxLength={100}/></label><label>Last name *<input name="lastName" autoComplete="family-name" required maxLength={100}/></label></div>
     <label>Email *<input name="email" type="email" autoComplete="email" required maxLength={254}/></label>
@@ -22,7 +25,7 @@ export default function RequestServicesForm() {
     <label>Details<textarea name="details" rows={5} maxLength={5000} placeholder="Please include a brief description of the reason you are contacting us."/></label>
     <fieldset><legend>I am a *</legend>{['Home Owner', 'Realtor', 'Restoration Company', 'Property Manager', 'Insurance Company', 'Other'].map(role => <label className="form-choice" key={role}><input type="radio" name="clientType" value={role} required/>{role}</label>)}</fieldset>
     <label>How did you hear about us? *<select name="referral" required defaultValue=""><option value="" disabled>Please select</option>{['Search engine', 'Referral', 'Social media', 'Returning client', 'Other'].map(value => <option key={value}>{value}</option>)}</select></label>
-    <label className="form-choice"><input name="communicationsConsent" type="checkbox" value="yes"/>I agree to receive communications from Enviro-Centric about my request.</label>
+    <label className="form-choice"><input name="communicationsConsent" type="checkbox" value="yes"/>I agree to receive communications from Envirocentric about my request.</label>
     <button className="site-button" type="submit" disabled={sending}>{sending ? 'Submitting…' : 'Submit request'}</button><p role="status" aria-live="polite">{status}</p>
   </form>;
 }

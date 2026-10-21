@@ -4,7 +4,7 @@ from fastapi.routing import APIRoute
 import logging
 import time
 from app.core.config import settings
-from app.api.v1 import auth, users, roles, projects, samples, companies, laboratory, reports, barcode
+from app.api.v1 import auth, users, roles, projects, samples, companies, laboratory, reports, barcode, contact
 from app.startup import startup
 from app.db.session import get_db
 from app.db.queries.manager import query_manager
@@ -103,6 +103,7 @@ app.add_middleware(
 )
 
 # Include routers
+app.include_router(contact.router, prefix=settings.API_V1_STR)
 app.include_router(auth.router, prefix=f"{settings.API_V1_STR}/auth")
 app.include_router(users.router, prefix=f"{settings.API_V1_STR}")
 app.include_router(roles.router, prefix=f"{settings.API_V1_STR}")
