@@ -1,9 +1,11 @@
+import PropTypes from 'prop-types';
 import React, { useState, useRef, useEffect } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 import Login from '../pages/Login';
 import ServicesMenu from './ServicesMenu';
+import ReadabilityControl from './ReadabilityControl';
 
 const navigation = [
   { name: "Home", href: "/" },
@@ -26,7 +28,7 @@ const userMenuOptions = [
   { name: "Logout", action: "logout", icon: "M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" }
 ];
 
-export default function Navbar() {
+export default function Navbar({ readabilityMode = 1, onReadabilityChange = () => {} }) {
   const { isAuthenticated, logout, user } = useAuth();
   const [isLoginOpen, setIsLoginOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -152,7 +154,8 @@ export default function Navbar() {
             </div>
 
             {/* Right side buttons */}
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center gap-2 sm:gap-4">
+              <ReadabilityControl value={readabilityMode} onChange={onReadabilityChange} />
               {isAuthenticated ? (
                 <div className="relative" ref={profileMenuRef}>
                   <button
@@ -290,3 +293,5 @@ export default function Navbar() {
     </>
   );
 }
+
+Navbar.propTypes = { readabilityMode: PropTypes.oneOf([1, 2, 3]), onReadabilityChange: PropTypes.func };
