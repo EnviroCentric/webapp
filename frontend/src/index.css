@@ -297,3 +297,7 @@ html.dark .text-boxes-hidden :is(.site-navbar, .contact-banner) {
 /* Navbar color supplied by the user; independent of text-box visibility. */
 .site-slideshow-shell .site-navbar, html.dark .site-slideshow-shell .site-navbar { background:#35414f; backdrop-filter:none; }
 .site-navbar .text-box-toggle { color:#f3f4f6; }
+
+.contact-actions { display:flex; flex-direction:column; align-items:flex-start; gap:12px; margin-block:20px 24px; }
+.contact-actions .contact-action { max-width:100%; text-align:center; overflow-wrap:anywhere; }
+.contact-action:focus-visible { outline:3px solid #bfdbfe; outline-offset:3px; }
