@@ -22,7 +22,7 @@ export default function RequestServicesForm() {
     <label>Details<textarea name="details" rows={5} maxLength={5000} placeholder="Please include a brief description of the reason you are contacting us."/></label>
     <fieldset><legend>I am a *</legend>{['Home Owner', 'Realtor', 'Restoration Company', 'Property Manager', 'Insurance Company', 'Other'].map(role => <label className="form-choice" key={role}><input type="radio" name="clientType" value={role} required/>{role}</label>)}</fieldset>
     <label>How did you hear about us? *<select name="referral" required defaultValue=""><option value="" disabled>Please select</option>{['Search engine', 'Referral', 'Social media', 'Returning client', 'Other'].map(value => <option key={value}>{value}</option>)}</select></label>
-    <label className="form-choice"><input name="communicationsConsent" type="checkbox" value="yes"/>I agree to receive communications from Enviro-Centric about my request.</label>
+    <label className="form-choice"><input name="communicationsConsent" type="checkbox" value="yes"/>I agree to receive communications from Envirocentric about my request.</label>
     <button className="site-button" type="submit" disabled={sending}>{sending ? 'Submitting…' : 'Submit request'}</button><p role="status" aria-live="polite">{status}</p>
   </form>;
 }

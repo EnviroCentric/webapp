@@ -4,6 +4,7 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
+import Seo from './components/Seo';
 import ContactBanner from './components/ContactBanner';
 import LandscapeBackground from './components/LandscapeBackground';
 import Home from './pages/Home';
@@ -54,6 +55,7 @@ function App() {
         <PermissionsProvider>
           <ThemeProvider>
             <div className={`min-h-screen site-slideshow-shell ${showTextBoxes ? '' : 'text-boxes-hidden'}`}>
+              <Seo />
               <LandscapeBackground />
               <button type="button" className="text-box-toggle" role="switch" aria-checked={showTextBoxes} onClick={toggleTextBoxes}>Text boxes: {showTextBoxes ? 'On' : 'Off'}</button>
               <Navbar />

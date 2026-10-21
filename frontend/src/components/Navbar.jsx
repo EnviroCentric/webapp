@@ -96,7 +96,7 @@ export default function Navbar() {
                   <Link to="/" className="flex items-center">
                     <img
                       src={logo}
-                      alt="Enviro-Centric Logo"
+                      alt="Envirocentric Logo"
                       className="h-8 sm:h-10 md:h-12 w-auto"
                       loading="eager"
                       decoding="async"

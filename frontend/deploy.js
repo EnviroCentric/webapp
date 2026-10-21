@@ -25,6 +25,8 @@ const contentTypes = {
   '.jpeg': 'image/jpeg',
   '.webp': 'image/webp',
   '.ico': 'image/x-icon',
+  '.xml': 'application/xml; charset=utf-8',
+  '.txt': 'text/plain; charset=utf-8',
 };
 
 async function files(dir) {
@@ -39,13 +41,15 @@ async function files(dir) {
 }
 
 for (const file of await files(root)) {
-  const key = path.relative(root, file).replaceAll('\\', '/');
+  const relativePath = path.relative(root, file).replaceAll('\\', '/');
+  // Nested index files become extensionless page URLs in S3 (including /services).
+  const key = relativePath.endsWith('/index.html') ? relativePath.slice(0, -'/index.html'.length) : relativePath;
   const immutable = key.startsWith('assets/');
   await s3.send(new PutObjectCommand({
     Bucket: bucket,
     Key: key,
     Body: await readFile(file),
-    ContentType: contentTypes[path.extname(key).toLowerCase()] ?? 'application/octet-stream',
+    ContentType: contentTypes[path.extname(file).toLowerCase()] ?? 'application/octet-stream',
     CacheControl: immutable ? 'public,max-age=31536000,immutable' : 'no-cache',
   }));
   console.log(`Uploaded ${key}`);

@@ -153,8 +153,8 @@ export class WebsiteStack extends cdk.Stack {
       },
       defaultRootObject: 'index.html',
       errorResponses: [
-        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: '/index.html', ttl: cdk.Duration.seconds(0) },
-        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: '/index.html', ttl: cdk.Duration.seconds(0) },
+        { httpStatus: 403, responseHttpStatus: 200, responsePagePath: '/app.html', ttl: cdk.Duration.seconds(0) },
+        { httpStatus: 404, responseHttpStatus: 200, responsePagePath: '/app.html', ttl: cdk.Duration.seconds(0) },
       ],
       certificate,
       domainNames,
