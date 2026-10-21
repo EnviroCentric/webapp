@@ -1,4 +1,4 @@
-import { useReadabilityMode } from './hooks/useReadabilityMode';
+import { useTextBoxes } from './hooks/useTextBoxes';
 import './index.css';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
@@ -38,17 +38,17 @@ import { PermissionsProvider } from './context/PermissionsContext';
 
 function App() {
   const { pathname } = useLocation();
-  const [readabilityMode, selectReadabilityMode] = useReadabilityMode();
+  const [showTextBoxes, toggleTextBoxes] = useTextBoxes();
   const isPublicPage = ['/', '/our-projects', '/services', '/contact'].includes(pathname);
   return (
     <AuthProvider>
       <RolesProvider>
         <PermissionsProvider>
           <ThemeProvider>
-            <div className={`min-h-screen site-slideshow-shell text-box-mode-${readabilityMode}`}>
+            <div className={`min-h-screen site-slideshow-shell ${isPublicPage && !showTextBoxes ? 'text-boxes-hidden' : ''}`}>
               <Seo />
               <LandscapeBackground />
-              <Navbar readabilityMode={readabilityMode} onReadabilityChange={selectReadabilityMode} />
+              <Navbar showTextBoxes={showTextBoxes} onToggleTextBoxes={toggleTextBoxes} />
               <main className="pt-16 pb-6 min-h-[calc(100vh-4rem)]">
                 <Routes>
                   <Route path="/" element={<Home />} />

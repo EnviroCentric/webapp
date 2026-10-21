@@ -1,17 +1,13 @@
 import React from 'react';
 import { cleanup, fireEvent, render, screen } from '@testing-library/react';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
-import { MemoryRouter, Link, Routes, Route } from 'react-router-dom';
+import { MemoryRouter, Link } from 'react-router-dom';
 import ReadabilityControl from './ReadabilityControl';
-import { useReadabilityMode } from '../hooks/useReadabilityMode';
+import { useTextBoxes } from '../hooks/useTextBoxes';
 
 function Preview() {
-  const [mode, change] = useReadabilityMode();
-  return <div data-testid="shell" className={`text-box-mode-${mode}`}>
-    <ReadabilityControl value={mode} onChange={change} />
-    <Link to="/services">Services</Link>
-    <Routes><Route path="/" element={<p>Home</p>} /><Route path="/services" element={<p>Service content</p>} /></Routes>
-  </div>;
+  const [enabled, toggle] = useTextBoxes();
+  return <><ReadabilityControl checked={enabled} onToggle={toggle} /><Link to="/services">Services</Link></>;
 }
 function show() { return render(<MemoryRouter><Preview /></MemoryRouter>); }
 beforeEach(() => {
@@ -23,37 +19,41 @@ beforeEach(() => {
 });
 afterEach(() => { cleanup(); vi.restoreAllMocks(); vi.unstubAllGlobals(); });
 
-it('offers three named styles and preserves the selection across navigation and reloads', () => {
+it('defaults to no boxes and remembers the two-state switch across navigation and reload', () => {
   const initial = show();
-  expect(screen.getByRole('button', { name: '1: No text boxes' })).toHaveAttribute('aria-pressed', 'true');
-  fireEvent.click(screen.getByRole('button', { name: '2: Crystal glass text boxes' }));
-  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-2');
-  expect(localStorage.getItem('readabilityMode')).toBe('2');
+  const toggle = screen.getByRole('switch', { name: 'Readability backgrounds' });
+  expect(toggle).toHaveAttribute('aria-checked', 'false');
+  expect(screen.queryByRole('button', { name: /Crystal glass/ })).not.toBeInTheDocument();
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute('aria-checked', 'true');
+  expect(localStorage.getItem('showTextBoxes')).toBe('true');
   fireEvent.click(screen.getByRole('link', { name: 'Services' }));
-  expect(screen.getByText('Service content')).toBeInTheDocument();
-  expect(screen.getByRole('button', { name: '2: Crystal glass text boxes' })).toHaveAttribute('aria-pressed', 'true');
+  expect(toggle).toHaveAttribute('aria-checked', 'true');
   initial.unmount();
   show();
-  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-2');
-  fireEvent.click(screen.getByRole('button', { name: '3: Dark text boxes' }));
-  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-3');
-  expect(screen.getAllByRole('button', { pressed: true })).toHaveLength(1);
+  const restored = screen.getByRole('switch', { name: 'Readability backgrounds' });
+  expect(restored).toHaveAttribute('aria-checked', 'true');
+  fireEvent.click(restored);
+  expect(restored).toHaveAttribute('aria-checked', 'false');
+  expect(localStorage.getItem('showTextBoxes')).toBe('false');
 });
 
-it('maps the previous enabled toggle to dark boxes and prefers a saved numbered mode', () => {
-  localStorage.setItem('showTextBoxes', 'true');
-  const legacy = show();
-  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-3');
-  legacy.unmount();
-  localStorage.setItem('readabilityMode', '2');
+it('migrates the numbered dark style but prefers an explicit saved toggle choice', () => {
+  localStorage.setItem('readabilityMode', '3');
+  const initial = show();
+  expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'true');
+  initial.unmount();
+  localStorage.setItem('showTextBoxes', 'false');
   show();
-  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-2');
+  expect(screen.getByRole('switch')).toHaveAttribute('aria-checked', 'false');
 });
 
-it('keeps the style control usable when storage is blocked', () => {
+it('defaults to no boxes and still toggles when browser storage is blocked', () => {
   localStorage.getItem.mockImplementation(() => { throw new Error('blocked'); });
   localStorage.setItem.mockImplementation(() => { throw new Error('blocked'); });
   show();
-  fireEvent.click(screen.getByRole('button', { name: '2: Crystal glass text boxes' }));
-  expect(screen.getByTestId('shell')).toHaveClass('text-box-mode-2');
+  const toggle = screen.getByRole('switch');
+  expect(toggle).toHaveAttribute('aria-checked', 'false');
+  fireEvent.click(toggle);
+  expect(toggle).toHaveAttribute('aria-checked', 'true');
 });

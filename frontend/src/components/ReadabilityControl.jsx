@@ -1,19 +1,10 @@
 import PropTypes from 'prop-types';
 
-const options = [
-  { value: 1, label: 'No text boxes' },
-  { value: 2, label: 'Crystal glass text boxes' },
-  { value: 3, label: 'Dark text boxes' },
-];
-
-export default function ReadabilityControl({ value, onChange }) {
-  return <div className="readability-control">
-    <span className="readability-label" aria-hidden="true">Readability</span>
-    <div className="readability-options" role="group" aria-label="Readability mode">
-      {options.map(option => <button type="button" key={option.value}
-        aria-label={`${option.value}: ${option.label}`} title={option.label}
-        aria-pressed={value === option.value} onClick={() => onChange(option.value)}>{option.value}</button>)}
-    </div>
-  </div>;
+export default function ReadabilityControl({ checked, onToggle }) {
+  return <button type="button" className="text-box-toggle" role="switch"
+    aria-label="Readability backgrounds" aria-checked={checked} onClick={onToggle}>
+    <span>Readability</span>
+    <span className="text-box-switch-track" aria-hidden="true"><span className="text-box-switch-thumb" /></span>
+  </button>;
 }
-ReadabilityControl.propTypes = { value: PropTypes.oneOf([1, 2, 3]).isRequired, onChange: PropTypes.func.isRequired };
+ReadabilityControl.propTypes = { checked: PropTypes.bool.isRequired, onToggle: PropTypes.func.isRequired };

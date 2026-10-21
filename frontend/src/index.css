@@ -263,38 +263,37 @@ html:not(.dark) .home-service-card.bg-white { background: var(--site-surface) !i
 /* Public-page call to action spans the viewport outside content containers. */
 main > .contact-banner { width: 100%; margin-top: var(--site-section-gap); border-radius: 12px; }
 
+/* Persistent preview control for content surfaces on every route. */
+.text-box-toggle { display:flex; align-items:center; gap:8px; padding:4px; color:inherit; font-size:11px; cursor:pointer; background:transparent; }
+.text-box-switch-track { display:inline-flex; align-items:center; width:36px; height:20px; padding:2px; border-radius:999px; background:#64748b; transition:background .2s; }
+.text-box-switch-thumb { width:16px; height:16px; border-radius:50%; background:white; transition:transform .2s; }
+.text-box-toggle[aria-checked="true"] .text-box-switch-track { background:#2563eb; }
+.text-box-toggle[aria-checked="true"] .text-box-switch-thumb { transform:translateX(16px); }
+.text-box-toggle:focus-visible { outline: 3px solid #60a5fa; outline-offset: 3px; }
+.text-boxes-hidden { --site-surface: transparent; }
+/* Navigation and footer surfaces stay visible during the content preview. */
+.text-boxes-hidden :is(.site-navbar, .contact-banner) {
+  --site-surface: rgba(243, 244, 246, .78);
+}
+html.dark .text-boxes-hidden :is(.site-navbar, .contact-banner) {
+  --site-surface: rgba(31, 41, 55, .78);
+}
+.text-boxes-hidden :is(.reading-panel, .company-panel, .contact-page, .public-projects, .home-service-card, .request-form),
+.text-boxes-hidden main :is(.bg-white, .bg-gray-50, .bg-gray-800, .bg-gray-900, .bg-gray-900\/50) {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  box-shadow: none !important;
+  border-color: transparent !important;
+}
 /* Keep form choices legible when their dropdown is open. */
 .request-form select option { background: #f3f4f6; color: #111827; }
-
-:root { --navbar-surface:#111827; --navbar-ink:#f3f4f6; }
-/* The fixed navbar has its own opaque surface, independent of photos and modes. */
-.site-slideshow-shell .site-navbar,
-.dark .site-slideshow-shell .site-navbar { background:var(--navbar-surface); color:var(--navbar-ink); backdrop-filter:none; }
-.site-navbar :is(.text-gray-900,.text-gray-300,.text-gray-400),
-.site-navbar .services-menu { color:var(--navbar-ink) !important; }
-.site-navbar :is(.bg-gray-900,.dark\:bg-gray-900) { background:#111827; color:white; }
-.site-navbar :is(.services-mega-menu,.bg-white,.dark\:bg-gray-800) { background:var(--navbar-surface); color:var(--navbar-ink); }
-.readability-control { display:flex; align-items:center; gap:8px; flex-shrink:0; }
-.readability-label { color:var(--navbar-ink); font-size:11px; font-weight:500; }
-.readability-options { display:flex; gap:2px; padding:3px; border:1px solid #ffffff35; border-radius:8px; background:#111827; }
-.readability-options button { display:grid; place-items:center; width:30px; height:30px; border-radius:5px; color:var(--navbar-ink); font-size:12px; font-weight:600; cursor:pointer; transition:background .15s,color .15s; }
-.readability-options button:hover { background:#ffffff20; }
-.readability-options button[aria-pressed="true"] { background:#e7f0e8; color:#122b24; }
-.readability-options button:focus-visible { outline:2px solid #a5dbea; outline-offset:2px; }
-@media(max-width:639px) { .readability-label { display:none; } .readability-options button { width:27px; height:30px; } }
-
-/* Surface variables live in main so navbar/dropdown styling never inherits them. */
-.text-box-mode-1 > main { --content-surface:transparent; --content-blur:none; --content-edge:transparent; --content-shadow:none; }
-.text-box-mode-2 > main { --content-surface:rgba(8,28,26,.125); --content-blur:blur(6px); --content-edge:rgba(255,255,255,.31); --content-shadow:inset 0 1px 0 #ffffff12; }
-.text-box-mode-3 > main { --content-surface:rgba(31,41,55,.78); --content-blur:blur(8px); --content-edge:rgba(255,255,255,.15); --content-shadow:none; }
-.site-slideshow-shell > main :is(.reading-panel,.company-panel,.home-service-card,.request-form,.contact-banner),
-.site-slideshow-shell > main :where(div,section,article,form,aside,header,table):is(.bg-white,.bg-gray-50,.bg-gray-800,.bg-gray-900,.bg-gray-900\/50) {
-  background:var(--content-surface) !important;
-  backdrop-filter:var(--content-blur) !important;
-  border-color:var(--content-edge) !important;
-  box-shadow:var(--content-shadow) !important;
-}
-.site-slideshow-shell > main :is(.reading-panel,.company-panel,.home-service-card,.request-form,.contact-banner) { border-style:solid; border-width:1px; }
-.site-slideshow-shell > main :is(.contact-page,.public-projects,.landscape-content) { background:transparent !important; backdrop-filter:none !important; }
-.site-slideshow-shell > main :is(.landscape-page,.contact-page,.contact-banner) { color:#f3f4f6; }
-.contact-page > header h1 { color:var(--navbar-ink); }
+/* Keep the request button centered between the introduction and service cards. */
+.home-hero { min-height:0; padding-block:clamp(40px,6vw,72px) 0; }
+.home-hero h1 { margin-bottom:0; }
+.home-service-cta { display:flex; justify-content:center; padding-block:clamp(32px,4vw,56px); }
+.home-page .company-panel ul,
+.public-projects ul,
+.services-page .service-tile ul { padding-inline-start:3rem; }
+/* Navbar color supplied by the user; independent of text-box visibility. */
+.site-slideshow-shell .site-navbar, html.dark .site-slideshow-shell .site-navbar { background:#35414f; backdrop-filter:none; }
+.site-navbar .text-box-toggle { color:#f3f4f6; }

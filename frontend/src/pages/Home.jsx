@@ -8,8 +8,8 @@ export default function Home() {
   return (
     <div className="landscape-page home-page">
       <div className="landscape-content">
-      <header className="home-hero max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="reading-panel"><img src={logo} alt="Envirocentric Logo" className="home-logo"/><h1>Environmental Testing and Consulting</h1><Link to="/contact#request-services" className="site-button">Request our services</Link></div></header>
-<div className="home-sections max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <header className="home-hero max-w-7xl mx-auto px-4 sm:px-6 lg:px-8"><div className="reading-panel"><img src={logo} alt="Envirocentric Logo" className="home-logo"/><h1>Environmental Testing and Consulting</h1></div></header>
+<div className="home-service-cta"><Link to="/contact#request-services" className="site-button">Request our services</Link></div><div className="home-sections max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
         {/* Services Section */}
         <section aria-label="Environmental services" className="py-12 text-center reading-panel">

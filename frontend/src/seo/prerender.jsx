@@ -16,12 +16,12 @@ const pages = { '/': Home, '/services': ServiceInfo, '/our-projects': PublicProj
 export function renderPublicPage(path) {
   const Page = pages[path];
   return renderToString(<StaticRouter location={path}>
-    <div className="min-h-screen site-slideshow-shell text-box-mode-1">
+    <div className="min-h-screen site-slideshow-shell text-boxes-hidden">
       <LandscapeBackground />
       <nav className="fixed top-0 left-0 right-0 z-50 site-navbar shadow-md" aria-label="Main navigation">
         <div className="max-w-7xl mx-auto px-4 flex items-center gap-4 h-16">
           <a href="/" aria-label="Envirocentric home"><img src="/logo.png" alt="Envirocentric Logo" className="h-10 w-auto" /></a>
-          <a href="/">Home</a><a href="/services">Services</a><a href="/our-projects">Projects</a><a href="/contact">Contact</a><div className="ml-auto"><ReadabilityControl value={1} onChange={() => {}} /></div>
+          <a href="/">Home</a><a href="/services">Services</a><a href="/our-projects">Projects</a><a href="/contact">Contact</a><div className="ml-auto"><ReadabilityControl checked={false} onToggle={() => {}} /></div>
         </div>
       </nav>
       <main className="pt-16 pb-6 min-h-[calc(100vh-4rem)]"><Page /><ContactBanner /></main>
