@@ -1,6 +1,6 @@
 import { serviceSlides } from './serviceSlides.js';
 
-export const siteUrl = 'https://enviro-centric.com';
+export const siteUrl = 'https://www.enviro-centric.com';
 
 export const publicPages = {
   '/': {

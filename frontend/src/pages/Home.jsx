@@ -98,16 +98,18 @@ export default function Home() {
                 Our strength lies in our credentialed team of industry professionals. We hold state and federal certifications, operating as California Certified Asbestos Consultants, CDPH Lead Inspectors, CDPH Lead Risk Assessors, CDPH Lead Project Monitors, and Mold Inspectors and Supervisors. Whether you face complex environmental regulations, require hazardous material testing, or need oversight for a remediation project, we deliver the precise data and professional monitoring necessary to protect occupants and investments.
               </p>
               <p>
-                We bridge the gap between rigorous technical consulting and hands-on environmental solutions. Our diverse capabilities allow us to manage projects from initial site inspection through construction and final clearance, supported by our NAICS classifications:
+                We bridge the gap between rigorous technical consulting and hands-on environmental solutions. Our diverse capabilities allow us to manage projects from initial site inspection through construction and final clearance. Our NAICS classifications are:
               </p>
               <ul className="list-disc pl-10 space-y-1">
-                <li><strong>541350 &amp; 541380:</strong> Building Inspection Services and Testing Laboratories</li>
+                <li><strong>541350:</strong> Building Inspection Services</li>
+                <li><strong>541380:</strong> Testing Laboratories</li>
                 <li><strong>541620:</strong> Environmental Consulting Services</li>
                 <li><strong>236220:</strong> Commercial and Institutional Building Construction</li>
-                <li><strong>238910 &amp; 238990:</strong> Site Preparation and Specialty Trade Contracting</li>
+                <li><strong>238910:</strong> Site Preparation</li>
+                <li><strong>238990:</strong> Specialty Trade Contracting</li>
               </ul>
               <p>
-                At Envirocentric, we pride ourselves on safety, technical precision, and unwavering compliance with local and state regulations. We look forward to partnering with you to create safer, healthier environments across California.
+                At Envirocentric, we pride ourselves on safety, technical precision, and unwavering compliance with local, state, and federal regulations. We look forward to partnering with you to create safer, healthier environments across California.
               </p>
             </div>
           </div>

@@ -121,6 +121,10 @@ html {
 .contact-layout { display:grid; grid-template-columns:1fr 2fr; gap:40px; }
 .contact-layout aside p { margin:16px 0; }
 .contact-layout h2,.request-form h2 { font-size:28px; font-weight:600; }
+.contact-actions { display:flex; flex-direction:column; align-items:flex-start; gap:12px; margin-block:20px 24px; }
+.contact-actions .contact-action { display:inline-flex; align-items:center; min-height:44px; max-width:100%; text-align:left; overflow-wrap:anywhere; color:inherit; background:none; }
+.contact-action:hover { text-decoration:underline; text-underline-offset:4px; }
+.contact-action:focus-visible { outline:3px solid #bfdbfe; outline-offset:3px; }
 .request-form { background:#f3f4f6; padding:32px; border-radius:12px; display:grid; gap:22px; scroll-margin-top:90px; }
 .request-form label { display:grid; gap:8px; }
 .request-form input:not([type=radio]):not([type=checkbox]),.request-form select,.request-form textarea { width:100%; background:transparent; border:1px solid #6b7280; border-radius:4px; padding:12px; color:inherit; }
@@ -132,8 +136,12 @@ html {
 .request-form legend { margin-bottom:10px; }
 .dark .contact-page,.dark .public-projects { color:#f3f4f6; }
 .dark .request-form { background:#1f2937; }
-.services-menu-toggle { color:inherit; padding:8px 12px; font-weight:500; cursor:pointer; }
+.services-menu-trigger { display:flex; align-items:center; }
+.services-menu-link { display:inline-block; color:inherit; padding:8px 12px; font-weight:500; }
+.services-menu-toggle { color:inherit; min-width:44px; min-height:44px; font-weight:500; cursor:pointer; }
+.services-menu-link:focus-visible,.services-menu-toggle:focus-visible { outline:2px solid #a5dbea; outline-offset:2px; border-radius:4px; }
 .services-menu { color:#111827; font-size:14px; }
+.services-menu:not(.mobile-services-menu) { padding-block:14px; margin-block:-14px; }
 .dark .services-menu { color:#e5e7eb; }
 .services-mega-menu { position:absolute; top:100%; left:50%; transform:translateX(-50%); width:min(1100px,calc(100vw - 32px)); background:#f3f4f6; color:#111827; padding:32px; box-shadow:0 16px 32px #0004; border-radius:0 0 8px 8px; }
 .dark .services-mega-menu { background:#1f2937; color:#f3f4f6; }

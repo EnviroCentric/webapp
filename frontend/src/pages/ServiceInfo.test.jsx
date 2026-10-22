@@ -29,7 +29,7 @@ it('opens a service directly with its own content, photo and canonical URL', () 
   expect(screen.getByRole('heading', { name: 'Mold Inspections' })).toBeInTheDocument();
   expect(screen.queryByText('XRF testing of painted surfaces')).not.toBeInTheDocument();
   expect(container.querySelector('.landscape-background img')).toHaveAttribute('src', '/images/landscapes/forest.jpg');
-  expect(document.head.querySelector('link[rel="canonical"]').href).toBe('https://enviro-centric.com/services/microbial');
+  expect(document.head.querySelector('link[rel="canonical"]').href).toBe('https://www.enviro-centric.com/services/microbial');
 });
 
 it('changes pages through top service bubbles and supports browser back without bottom arrows', () => {

@@ -9,7 +9,7 @@ const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const output = path.join(root, 'dist');
 const template = await readFile(path.join(output, 'index.html'), 'utf8');
 const escape = value => value.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const server = await createServer({ root, configFile: false, plugins: [react()], server: { middlewareMode: true }, appType: 'custom' });
+const server = await createServer({ root, configFile: false, plugins: [react()], optimizeDeps: { noDiscovery: true, include: [] }, server: { middlewareMode: true, hmr: false }, appType: 'custom' });
 try {
   const { renderPublicPage } = await server.ssrLoadModule('/src/seo/prerender.jsx');
   for (const route of Object.keys(publicPages)) {

@@ -15,7 +15,7 @@ describe('search metadata during navigation', () => {
     expect(document.title).toContain('Asbestos, Lead & Mold');
     fireEvent.click(screen.getByRole('link', { name: 'Contact' }));
     expect(document.title).toContain('Contact Envirocentric');
-    expect(document.head.querySelector('link[rel="canonical"]').href).toBe('https://enviro-centric.com/contact');
+    expect(document.head.querySelector('link[rel="canonical"]').href).toBe('https://www.enviro-centric.com/contact');
     expect(document.head.querySelector('meta[name="description"]').content).toContain('Request environmental testing');
     expect(document.head.querySelectorAll('#organization-schema')).toHaveLength(1);
     const schema = JSON.parse(document.getElementById('organization-schema').textContent);
@@ -30,6 +30,6 @@ describe('search metadata during navigation', () => {
     expect(document.getElementById('organization-schema')).toBeNull();
     fireEvent.click(screen.getByRole('link', { name: 'Services' }));
     expect(document.head.querySelector('meta[name="robots"]').content).toBe('index, follow');
-    expect(document.head.querySelector('link[rel="canonical"]').href).toBe('https://enviro-centric.com/services');
+    expect(document.head.querySelector('link[rel="canonical"]').href).toBe('https://www.enviro-centric.com/services');
   });
 });
